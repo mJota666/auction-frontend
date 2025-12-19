@@ -1,15 +1,27 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import React from 'react';
+import Scene3D from './components/Scene3D';
+import Navbar from './components/Navbar';
+import HeroOverlay from './components/HeroOverlay';
+import Features from './components/Features';
+import HowItWorks from './components/HowItWorks';
+import CTA from './components/CTA';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+const App: React.FC = () => {
   return (
-    <>
-      Hello
-    </>
-  )
-}
+    <div className="app-container">
+      <Scene3D />
+      <Navbar />
+      <HeroOverlay />
+      <Features />
+      <HowItWorks />
+      <CTA />
+      
+      {/* Footer simple */}
+      <footer style={{ textAlign: 'center', padding: '40px', opacity: 0.5, fontSize: '0.8rem' }}>
+        &copy; 2025 Online Auction (AUTO-BID). All rights reserved.
+      </footer>
+    </div>
+  );
+};
 
-export default App
+export default App;

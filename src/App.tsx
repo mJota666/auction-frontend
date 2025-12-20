@@ -1,26 +1,18 @@
 import React from 'react';
-import Scene3D from './components/Scene3D';
-import Navbar from './components/Navbar';
-import HeroOverlay from './components/HeroOverlay';
-import Features from './components/Features';
-import HowItWorks from './components/HowItWorks';
-import CTA from './components/CTA';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 const App: React.FC = () => {
   return (
-    <div className="app-container">
-      <Scene3D />
-      <Navbar />
-      <HeroOverlay />
-      <Features />
-      <HowItWorks />
-      <CTA />
-      
-      {/* Footer simple */}
-      <footer style={{ textAlign: 'center', padding: '40px', opacity: 0.5, fontSize: '0.8rem' }}>
-        &copy; 2025 Online Auction (AUTO-BID). All rights reserved.
-      </footer>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </Router>
   );
 };
 

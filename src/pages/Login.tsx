@@ -1,8 +1,64 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import AuthScene from '../components/AuthScene';
+import { authService } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
+  const [loading, setLoading] = React.useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInputs>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginFormInputs) => {
+    setLoading(true);
+
+    try {
+      const response = await authService.login(data);
+      console.log('Login successful:', response);
+      
+      // Adapt to the actual response structure
+      // Assuming response.data.token and response.data.user exist based on typical API design
+      // If the API returns flat structure, adjust accordingly.
+      // Based on previous index.js: data.data.token
+      
+      const token = response.data?.token;
+      const user = response.data?.user || { email: data.email, fullName: 'User', id: 0, role: 'USER' }; // Fallback if user data not in login response
+
+      if (token) {
+          login(token, user);
+          toast.success('Login successful!');
+          navigate('/');
+      } else {
+          throw new Error('No token received');
+      }
+
+    } catch (err: any) {
+      console.error('Login error:', err);
+      toast.error(err.response?.data?.message || err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-screen w-full bg-slate-50 overflow-hidden">
       {/* Left Side - 3D Scene */}
@@ -29,31 +85,31 @@ const Login: React.FC = () => {
             </p>
           </div>
           
-          <form className="mt-8 space-y-6" action="#" method="POST">
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="email-address" className="sr-only">Email address</label>
                 <input
                   id="email-address"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  {...register('email')}
+                  className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Email address"
                 />
+                {errors.email && <p className="text-red-500 text-xs mt-1 px-3">{errors.email.message}</p>}
               </div>
               <div>
                 <label htmlFor="password" className="sr-only">Password</label>
                 <input
                   id="password"
-                  name="password"
                   type="password"
                   autoComplete="current-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  {...register('password')}
+                  className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.password ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Password"
                 />
+                {errors.password && <p className="text-red-500 text-xs mt-1 px-3">{errors.password.message}</p>}
               </div>
             </div>
 
@@ -80,9 +136,10 @@ const Login: React.FC = () => {
             <div>
               <button
                 type="submit"
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                disabled={loading}
+                className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
-                Sign in
+                {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
           </form>

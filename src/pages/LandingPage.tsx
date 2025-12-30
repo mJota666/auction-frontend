@@ -5,6 +5,7 @@ import HeroOverlay from '../components/HeroOverlay';
 import Features from '../components/Features';
 import HowItWorks from '../components/HowItWorks';
 import CTA from '../components/CTA';
+import ProductList from '../components/product/ProductList';
 
 const LandingPage: React.FC = () => {
   return (
@@ -12,6 +13,11 @@ const LandingPage: React.FC = () => {
       <Scene3D />
       <Navbar />
       <HeroOverlay />
+      
+      <div className="bg-white relative z-10 py-10" style={{ marginTop: '100vh' }}>
+         <ProductList />
+      </div>
+
       <Features />
       <HowItWorks />
       <CTA />

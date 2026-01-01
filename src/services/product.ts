@@ -17,6 +17,8 @@ export interface Product {
     buyNowPrice?: number;
     autoExtend?: boolean;
     createdAt?: string;
+    bidCount?: number; // Added based on BE feedback
+    currentWinnerName?: string; // Added based on BE feedback
     status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
 }
 

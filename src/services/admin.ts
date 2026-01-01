@@ -18,6 +18,8 @@ export interface Category {
     id: number;
     name: string;
     description?: string;
+    parentId?: number;
+    children?: Category[];
 }
 
 export const adminService = {

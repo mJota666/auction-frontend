@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
-import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: number;
@@ -36,7 +34,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    console.log('AuthContext Token Changed:', token);
+  }, [token]);
+
   const login = (newToken: string, userData: User) => {
+    console.log('AuthContext login called', { newToken, userData });
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
     setToken(newToken);

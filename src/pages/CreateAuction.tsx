@@ -1,37 +1,126 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React from 'react'; // Removed unused useState
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { productService } from '../services/product';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import type { Category } from '../services/admin';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css'; // Import styles
 
 const createAuctionSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   startPrice: z.coerce.number().min(1000, 'Start price too low'),
   stepPrice: z.coerce.number().min(1000, 'Step price too low'),
+  buyNowPrice: z.coerce.number().optional().refine(val => !val || val >= 1000, {
+      message: 'Buy now price must be valid'
+  }),
   endAt: z.string().refine((val) => new Date(val) > new Date(), {
       message: 'End date must be in the future'
   }),
-  imageUrls: z.string().url('Must be a valid URL'), // Simplified for now, just ONE url
-  categoryId: z.coerce.number().min(1, 'Category is required')
+  imageUrls: z.array(
+      z.object({
+          url: z.string().url('Must be a valid URL')
+      })
+  ).min(3, 'At least 3 images are required'),
+  categoryId: z.coerce.number().min(1, 'Category is required'),
+  autoExtend: z.boolean().default(false)
+}).refine((data) => {
+    if (data.buyNowPrice && data.buyNowPrice <= data.startPrice) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Buy now price must be greater than start price",
+    path: ["buyNowPrice"]
 });
 
 type CreateAuctionInputs = z.infer<typeof createAuctionSchema>;
 
 const CreateAuction: React.FC = () => {
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CreateAuctionInputs>({
-    resolver: zodResolver(createAuctionSchema)
+  // Removed explicit generic <CreateAuctionInputs> to let Zod resolver infer correct types for coerced fields
+  const { register, control, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    resolver: zodResolver(createAuctionSchema),
+    defaultValues: {
+        title: '',
+        description: '',
+        imageUrls: [{ url: '' }, { url: '' }, { url: '' }],
+        startPrice: 0,
+        stepPrice: 0,
+        buyNowPrice: undefined, // Explicitly undefined
+        categoryId: 0,
+        endAt: '', 
+        autoExtend: false
+    }
   });
+
+  const { fields, append, remove } = useFieldArray({
+      control,
+      name: "imageUrls"
+  });
+
+  // State for raw categories and grouped structure
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  
+  // Memoize grouped categories to avoid recalculation on every render
+  const groupedCategories = React.useMemo(() => {
+      const groups: { parent: Category; children: Category[] }[] = [];
+      const orphans: Category[] = [];
+
+      // Check if the API returns an already nested structure
+      const isNested = categories.some(c => c.children && c.children.length > 0);
+
+      if (isNested) {
+          categories.forEach(cat => {
+              if (cat.children && cat.children.length > 0) {
+                  groups.push({ parent: cat, children: cat.children });
+              } else {
+                  orphans.push(cat);
+              }
+          });
+      } else {
+          // Flattened list strategy
+          const roots = categories.filter(c => !c.parentId);
+          
+          roots.forEach(root => {
+              const children = categories.filter(c => c.parentId === root.id);
+              if (children.length > 0) {
+                  groups.push({ parent: root, children });
+              } else {
+                  orphans.push(root);
+              }
+          });
+      }
+
+      return { groups, orphans };
+  }, [categories]);
+
+  React.useEffect(() => {
+      const fetchCategories = async () => {
+          try {
+              const data = await productService.getCategories();
+              console.log('Fetched Categories:', data);
+              if (data.data && data.data.length > 0) console.log('First Category Sample:', data.data[0]);
+              setCategories(data.data && Array.isArray(data.data) ? data.data : []);
+          } catch (error) {
+              console.error("Failed to fetch categories", error);
+          }
+      };
+      fetchCategories();
+  }, []);
 
   const onSubmit = async (data: CreateAuctionInputs) => {
     try {
-        await productService.createProduct({
+        const payload = {
             ...data,
-            imageUrls: [data.imageUrls] // Convert string to array
-        });
+            imageUrls: data.imageUrls.map(img => img.url), // Flatten to string array
+            buyNowPrice: data.buyNowPrice || undefined // Ensure undefined if 0 or empty
+        };
+
+        await productService.createProduct(payload);
         toast.success('Auction created successfully!');
         navigate('/');
     } catch (error: any) {
@@ -40,53 +129,187 @@ const CreateAuction: React.FC = () => {
     }
   };
 
+  const formatNumber = (value: number | undefined) => {
+      if (!value) return '';
+      return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4">
+    <div className="max-w-4xl mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8 text-gray-900">Create New Auction</h1>
       
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white p-8 rounded-lg shadow">
+        {/* Title */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Title</label>
           <input {...register('title')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
           {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
         </div>
 
+        {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Description</label>
-          <textarea {...register('description')} rows={4} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
+           <label className="block text-sm font-medium text-gray-700">Category</label>
+           <select {...register('categoryId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 bg-white">
+                <option value="">Select a category</option>
+                
+                {/* Render Standalone Categories */}
+                {groupedCategories.orphans.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+
+                {/* Render Grouped Categories */}
+                {groupedCategories.groups.map(group => (
+                    <optgroup key={group.parent.id} label={group.parent.name}>
+                        {group.children.map(child => (
+                            <option key={child.id} value={child.id}>
+                                {child.name}
+                            </option>
+                        ))}
+                    </optgroup>
+                ))}
+           </select>
+           {errors.categoryId && <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>}
+        </div>
+
+        {/* Description - WYSIWYG */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <ReactQuill 
+                theme="snow" 
+                value={field.value} 
+                onChange={field.onChange} 
+                className="h-64 mb-12" // Add margin bottom for toolbar
+              />
+            )}
+          />
           {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Prices Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Start Price</label>
-              <input type="number" {...register('startPrice')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
+              <Controller
+                control={control}
+                name="startPrice"
+                render={({ field: { onChange, value } }) => (
+                    <input
+                        type="text"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                        value={formatNumber(value as number | undefined)}
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
+                            if (!isNaN(Number(rawValue))) {
+                                onChange(Number(rawValue));
+                            }
+                        }}
+                    />
+                )}
+              />
               {errors.startPrice && <p className="text-red-500 text-xs mt-1">{errors.startPrice.message}</p>}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Step Price</label>
-              <input type="number" {...register('stepPrice')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
+               <Controller
+                control={control}
+                name="stepPrice"
+                render={({ field: { onChange, value } }) => (
+                    <input
+                        type="text"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                        value={formatNumber(value as number | undefined)}
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
+                            if (!isNaN(Number(rawValue))) {
+                                onChange(Number(rawValue));
+                            }
+                        }}
+                    />
+                )}
+              />
               {errors.stepPrice && <p className="text-red-500 text-xs mt-1">{errors.stepPrice.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Buy Now Price (Optional)</label>
+               <Controller
+                control={control}
+                name="buyNowPrice"
+                render={({ field: { onChange, value } }) => (
+                    <input
+                        type="text"
+                        placeholder="Optional"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                        value={formatNumber(value as number | undefined)}
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
+                            if (!rawValue) onChange(undefined);
+                            else if (!isNaN(Number(rawValue))) {
+                                onChange(Number(rawValue));
+                            }
+                        }}
+                    />
+                )}
+              />
+              {errors.buyNowPrice && <p className="text-red-500 text-xs mt-1">{errors.buyNowPrice.message}</p>}
             </div>
         </div>
 
+        {/* Images */}
         <div>
-           <label className="block text-sm font-medium text-gray-700">Category ID</label>
-           <input type="number" {...register('categoryId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
-           {errors.categoryId && <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Images (Min 3)</label>
+            <div className="space-y-2">
+                {fields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2">
+                        <input
+                            {...register(`imageUrls.${index}.url`)}
+                            placeholder={`Image URL ${index + 1}`}
+                            className="flex-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                        />
+                        {index > 2 && (
+                            <button type="button" onClick={() => remove(index)} className="text-red-600 hover:text-red-800">
+                                Remove
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
+            <button
+                type="button"
+                onClick={() => append({ url: '' })}
+                className="mt-2 text-sm text-indigo-600 hover:text-indigo-800"
+            >
+                + Add another image
+            </button>
+            {errors.imageUrls && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.message}</p>}
+            {/* Show error for specific fields if needed, but root error handles min length */}
+            {errors.imageUrls?.root && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.root.message}</p>}
         </div>
 
-         <div>
-           <label className="block text-sm font-medium text-gray-700">End Date</label>
-           <input type="datetime-local" {...register('endAt')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
-           {errors.endAt && <p className="text-red-500 text-xs mt-1">{errors.endAt.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Image URL</label>
-          <input {...register('imageUrls')} placeholder="https://example.com/image.jpg" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
-          {errors.imageUrls && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.message}</p>}
+        {/* End Date & Auto Extend */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+             <div>
+               <label className="block text-sm font-medium text-gray-700">End Date</label>
+               <input type="datetime-local" {...register('endAt')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
+               {errors.endAt && <p className="text-red-500 text-xs mt-1">{errors.endAt.message}</p>}
+            </div>
+            
+            <div className="flex items-center pb-3">
+                <input
+                    id="autoExtend"
+                    type="checkbox"
+                    {...register('autoExtend')}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="autoExtend" className="ml-2 block text-sm text-gray-900">
+                    Auto-extend auction if bid placed in last 5 mins?
+                </label>
+            </div>
         </div>
 
         <div className="pt-4">

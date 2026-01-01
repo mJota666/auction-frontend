@@ -24,10 +24,13 @@ const App: React.FC = () => {
     <Router>
       <AuthProvider>
         <Routes>
+          {/* Standalone Routes (No MainLayout) */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Protected/Inner Routes (With MainLayout) */}
           <Route element={<MainLayout />}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/create-auction" element={<CreateAuction />} />
@@ -36,11 +39,10 @@ const App: React.FC = () => {
             <Route path="/my-sales" element={<MySales />} />
             <Route path="/checkout/:id" element={<Checkout />} />
             
-            {/* Admin Routes - Should be protected by Role Guard in real app */}
+            {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/categories" element={<CategoryManagement />} />
-            {/* Add more routes here */}
           </Route>
         </Routes>
         <ToastContainer position="bottom-right" />

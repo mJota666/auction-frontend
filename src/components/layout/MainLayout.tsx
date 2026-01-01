@@ -1,10 +1,11 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Gavel, User, LogOut, ShoppingBag, Search } from 'lucide-react';
+import { Gavel, User, LogOut, ShoppingBag, Search, PlusCircle } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, token } = useAuth();
+  console.log('MainLayout Render:', { isAuthenticated, user, token });
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -55,6 +56,9 @@ const MainLayout: React.FC = () => {
                   </Link>
                   <Link to="/my-orders" className="p-1 rounded-full text-gray-400 hover:text-indigo-600 focus:outline-none">
                     <ShoppingBag className="h-6 w-6" />
+                  </Link>
+                  <Link to="/create-auction" className="p-1 rounded-full text-gray-400 hover:text-indigo-600 focus:outline-none" title="Create Auction">
+                    <PlusCircle className="h-6 w-6" />
                   </Link>
                   <button onClick={handleLogout} className="p-1 rounded-full text-gray-400 hover:text-red-600 focus:outline-none">
                     <LogOut className="h-6 w-6" />

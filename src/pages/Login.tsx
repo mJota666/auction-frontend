@@ -33,15 +33,13 @@ const Login: React.FC = () => {
 
     try {
       const response = await authService.login(data);
-      console.log('Login successful:', response);
-      
-      // Adapt to the actual response structure
-      // Assuming response.data.token and response.data.user exist based on typical API design
-      // If the API returns flat structure, adjust accordingly.
-      // Based on previous index.js: data.data.token
+      console.log('Login API Response:', response);
       
       const token = response.data?.token;
-      const user = response.data?.user || { email: data.email, fullName: 'User', id: 0, role: 'USER' }; // Fallback if user data not in login response
+      console.log('Extracted Token:', token);
+
+      const user = response.data?.user || { email: data.email, fullName: 'User', id: 0, role: 'USER' };
+      console.log('Extracted User:', user);
 
       if (token) {
           login(token, user);

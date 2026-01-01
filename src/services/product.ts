@@ -11,6 +11,8 @@ export interface Product {
     imageUrls: string[];
     categoryId?: number;
     sellerId?: number;
+    buyNowPrice?: number;
+    autoExtend?: boolean;
     status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
 }
 
@@ -44,6 +46,11 @@ export const productService = {
 
     placeBid: async (productId: number, amount: number) => {
         const response = await api.post('/bids', { productId, amount });
+        return response.data;
+    },
+
+    getCategories: async () => {
+        const response = await api.get('/categories'); // Changed from /admin/categories
         return response.data;
     }
 };

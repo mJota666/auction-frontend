@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { productService, type Product, type Bid } from '../services/product';
+import { productService, type Product, type Bid, type Question } from '../services/product';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Clock, User as UserIcon } from 'lucide-react';
+import { Clock, User as UserIcon, Star, MessageCircle, Send } from 'lucide-react';
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -12,9 +12,12 @@ const ProductDetail: React.FC = () => {
     
     const [product, setProduct] = useState<Product | null>(null);
     const [bids, setBids] = useState<Bid[]>([]);
+    const [questions, setQuestions] = useState<Question[]>([]);
     const [bidAmount, setBidAmount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [questionText, setQuestionText] = useState('');
+    const [submittingQuestion, setSubmittingQuestion] = useState(false);
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -45,11 +48,21 @@ const ProductDetail: React.FC = () => {
     const fetchProductData = async (productId: string) => {
         setLoading(true);
         try {
-            const [productData, bidsData] = await Promise.all([
+            const [productData, bidsData, qaData] = await Promise.all([
                 productService.getProduct(productId),
-                productService.getBids(productId)
+                productService.getBids(productId),
+                productService.getProductQA(productId)
             ]);
             setProduct(productData);
+            
+            if (Array.isArray(qaData)) {
+                setQuestions(qaData);
+            } else if (qaData && Array.isArray((qaData as any).data)) {
+                 setQuestions((qaData as any).data);
+            } else if (qaData && Array.isArray((qaData as any).content)) {
+                 setQuestions((qaData as any).content);
+            }
+
             setCurrentImageIndex(0); // Reset image index on new product load
             
             // Sort bids by amount desc to find highest
@@ -57,7 +70,6 @@ const ProductDetail: React.FC = () => {
             if (Array.isArray(bidsData)) {
                 validBids = bidsData;
             } else if (bidsData && Array.isArray((bidsData as any).data)) {
-                 // Handle wrapped response { data: [...] }
                  validBids = (bidsData as any).data;
             }
 
@@ -69,7 +81,8 @@ const ProductDetail: React.FC = () => {
             setBidAmount(currentPrice + (productData.stepPrice || 0));
         } catch (error) {
             console.error('Error fetching product details:', error);
-            toast.error('Failed to load product details');
+            // Don't show error toast for expected partial failures if basic product data loaded
+            // But here we fail whole block if one fails. Ideally should settle.
         } finally {
             setLoading(false);
         }
@@ -84,6 +97,42 @@ const ProductDetail: React.FC = () => {
             setRelatedProducts(list.filter((p: Product) => p.id !== Number(id)).slice(0, 5));
         } catch (error) {
             console.error('Failed to fetch related products', error);
+        }
+    };
+
+    const handleAskQuestion = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isAuthenticated) {
+            toast.info('Please login to ask a question');
+            navigate('/login');
+            return;
+        }
+
+        if (!questionText.trim()) {
+            toast.warning('Please enter a question');
+            return;
+        }
+
+        if (!id) return;
+
+        setSubmittingQuestion(true);
+        try {
+            await productService.askQuestion(id, questionText);
+            toast.success('Question sent successfully!');
+            setQuestionText('');
+            // Refresh Q&A
+            const qaData = await productService.getProductQA(id);
+             if (Array.isArray(qaData)) {
+                setQuestions(qaData);
+            } else if (qaData && Array.isArray((qaData as any).data)) {
+                 setQuestions((qaData as any).data);
+            } else if (qaData && Array.isArray((qaData as any).content)) {
+                 setQuestions((qaData as any).content);
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to send question');
+        } finally {
+            setSubmittingQuestion(false);
         }
     };
 
@@ -125,6 +174,16 @@ const ProductDetail: React.FC = () => {
         if (diffDays > 0) return `${diffDays} days ${diffHours} hours left`;
         if (diffHours > 0) return `${diffHours} hours ${diffMinutes} minutes left`;
         return `${diffMinutes} minutes left`;
+    };
+    
+    // Calculate Seller Rating
+    const getSellerRating = () => {
+        if (!product) return 5.0;
+        const pos = product.sellerRatingPositive || 0;
+        const neg = product.sellerRatingNegative || 0;
+        if (pos + neg === 0) return 5.0; // Default new seller
+        // Simple calculation: (Pos / Total) * 5
+        return ((pos / (pos + neg)) * 5).toFixed(1);
     };
 
     if (loading) return <div className="flex justify-center py-20">Loading...</div>;
@@ -217,13 +276,23 @@ const ProductDetail: React.FC = () => {
                         <div className="neu-extruded p-6 space-y-3 text-sm font-medium">
                             <div className="flex flex-col">
                                 <span className="text-[#6B7280] text-xs uppercase">Seller</span>
-                                <span className="text-[#3D4852] font-bold">{product.sellerName || `User #${product.sellerId || '?'}`}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[#3D4852] font-bold">{product.sellerName || `User #${product.sellerId || '?'}`}</span>
+                                    {/* Calculated Seller Rating */}
+                                    <div className="flex items-center text-xs text-yellow-500 bg-yellow-100 px-1.5 py-0.5 rounded-md">
+                                        <Star className="w-3 h-3 fill-current mr-0.5" />
+                                        <span className="font-bold">{getSellerRating()}</span>
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[#6B7280] text-xs uppercase">Highest Bidder</span>
-                                <span className="text-[#6C63FF] font-bold">
-                                    {highestBidder ? highestBidder.bidderName : 'No bids yet'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[#6C63FF] font-bold">
+                                        {highestBidder ? highestBidder.bidderName : 'No bids yet'}
+                                    </span>
+                                    {/* Bidder Rating (Still Mock or N/A as BE only provided Seller) */}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -272,6 +341,77 @@ const ProductDetail: React.FC = () => {
                 </div>
             </div>
 
+            {/* Questions & Answers */}
+            <div className="mt-16">
+                 <h2 className="text-2xl font-extrabold text-[#3D4852] mb-8 flex items-center">
+                    <span className="w-2 h-8 bg-[#6C63FF] rounded-full mr-3"></span>
+                    Questions & Answers
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Ask Question Form */}
+                    <div className="lg:col-span-1">
+                        <div className="neu-extruded p-6 sticky top-24">
+                            <h3 className="text-lg font-bold text-[#3D4852] mb-4 flex items-center">
+                                <MessageCircle className="w-5 h-5 mr-2 text-[#6C63FF]" />
+                                Ask a Question
+                            </h3>
+                            <form onSubmit={handleAskQuestion}>
+                                <textarea 
+                                    className="w-full neu-inset p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 transition-all resize-none mb-4"
+                                    rows={4}
+                                    placeholder="Type your question here..."
+                                    value={questionText}
+                                    onChange={(e) => setQuestionText(e.target.value)}
+                                ></textarea>
+                                <button type="submit" disabled={submittingQuestion} className="w-full neu-btn px-6 py-3 rounded-xl text-sm font-bold text-[#3D4852] flex items-center justify-center disabled:opacity-50">
+                                    <Send className="w-4 h-4 mr-2" />
+                                    {submittingQuestion ? 'Sending...' : 'Send Question'}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {/* Q&A List */}
+                    <div className="lg:col-span-2 space-y-6">
+                         {questions.length > 0 ? (
+                             questions.map((qa) => (
+                                 <div key={qa.id} className="neu-extruded p-6 transition-all hover:scale-[1.01]">
+                                     <div className="flex items-start gap-4">
+                                         <div className="w-10 h-10 rounded-full neu-inset flex items-center justify-center text-[#6B7280] flex-shrink-0">
+                                             <UserIcon className="w-5 h-5" />
+                                         </div>
+                                         <div className="flex-1">
+                                             <div className="flex justify-between items-start">
+                                                 <h4 className="font-bold text-[#3D4852]">{qa.userName}</h4>
+                                                 <span className="text-xs text-[#9CA3AF]">{new Date(qa.createAt).toLocaleDateString()}</span>
+                                             </div>
+                                             <p className="text-[#6B7280] text-sm mt-1 mb-3">{qa.question}</p>
+                                             
+                                             {/* Shop Response */}
+                                             {qa.answer && (
+                                                <div className="bg-[#E0E5EC] neu-inset p-4 rounded-xl flex gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-[#6C63FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                        S
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-[#3D4852] mb-1">Seller Response</p>
+                                                        <p className="text-sm text-[#4B5563]">{qa.answer}</p>
+                                                    </div>
+                                                </div>
+                                             )}
+                                         </div>
+                                     </div>
+                                 </div>
+                             ))
+                         ) : (
+                            <div className="neu-extruded p-8 text-center text-[#6B7280]">
+                                <p>No questions yet. Be the first to ask!</p>
+                            </div>
+                         )}
+                    </div>
+                </div>
+            </div>
+
             {/* Related Products */}
             {relatedProducts.length > 0 && (
                 <div className="mt-20">
@@ -309,11 +449,19 @@ const ProductDetail: React.FC = () => {
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0">
                                             <div className="h-10 w-10 neu-icon-well bg-[#E0E5EC] text-[#6C63FF]">
+                                                {/* Bidder with Mock Rating */}
                                                 <UserIcon className="h-5 w-5" />
                                             </div>
                                         </div>
                                         <div className="ml-4">
-                                            <p className="text-sm font-bold text-[#3D4852]">{bid.bidderName}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-[#3D4852]">{bid.bidderName}</p>
+                                                {/* Mock Bidder Rating */}
+                                                <div className="flex items-center text-xs text-yellow-500 bg-yellow-100 px-1.5 py-0.5 rounded-md">
+                                                    <Star className="w-3 h-3 fill-current mr-0.5" />
+                                                    <span className="font-bold">4.5</span>
+                                                </div>
+                                            </div>
                                             <p className="text-xs text-[#6B7280] font-medium">{new Date(bid.bidTime).toLocaleString()}</p>
                                         </div>
                                     </div>

@@ -19,7 +19,18 @@ export interface Product {
     createdAt?: string;
     bidCount?: number; // Added based on BE feedback
     currentWinnerName?: string; // Added based on BE feedback
+    sellerRatingPositive?: number; // Added based on BE feedback
+    sellerRatingNegative?: number; // Added based on BE feedback
     status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
+}
+
+export interface Question {
+    id: number;
+    userId: number;
+    userName: string;
+    question: string;
+    answer?: string;
+    createAt: string;
 }
 
 export interface Bid {
@@ -54,6 +65,16 @@ export const productService = {
 
     placeBid: async (productId: number, amount: number) => {
         const response = await api.post('/bids', { productId, amount });
+        return response.data;
+    },
+
+    getProductQA: async (productId: number | string) => {
+        const response = await api.get(`/products/${productId}/qa`);
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    askQuestion: async (productId: number | string, question: string) => {
+        const response = await api.post(`/products/qa`, { productId, question });
         return response.data;
     },
 

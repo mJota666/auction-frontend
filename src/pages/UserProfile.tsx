@@ -22,7 +22,7 @@ const UserProfile: React.FC = () => {
     const {
         register,
         handleSubmit,
-        setValue,
+        reset,
         formState: { errors },
     } = useForm<ProfileFormInputs>({
         resolver: zodResolver(profileSchema),
@@ -34,26 +34,37 @@ const UserProfile: React.FC = () => {
 
     useEffect(() => {
         if (user) {
-            setValue('fullName', user.fullName);
-            setValue('email', user.email);
+            reset({
+                fullName: user.fullName || '',
+                email: user.email || '',
+            });
         }
-    }, [user, setValue]);
+    }, [user, reset]);
 
     const onSubmit = async (data: ProfileFormInputs) => {
         try {
             // Depending on API, we might update profile and password separately or together
             const updatedUser = await authService.updateProfile(data);
+            console.log('Update success, response:', updatedUser);
             
             // Update context
-             if (token) {
-                // Assuming updatedUser matches User interface or we need to merge
-                login(token, { ...user, ...updatedUser }); // Update user in local storage/context
+             if (token && user) {
+                // API returns success message only, so we update local state with form data
+                // We assume email is read-only or handled separately if changed
+                const newUserData = { 
+                    ...user, 
+                    fullName: data.fullName 
+                };
+                
+                login(token, newUserData); // Update user in local storage/context
             }
 
             toast.success('Profile updated successfully');
             setIsEditing(false);
         } catch (error: any) {
-            toast.error('Failed to update profile');
+            console.error('Failed to update profile:', error);
+            console.error('Error Response:', error.response?.data);
+            toast.error(error.response?.data?.message || 'Failed to update profile');
         }
     };
 

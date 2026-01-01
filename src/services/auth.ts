@@ -14,14 +14,13 @@ export interface LoginData {
 export interface AuthResponse {
     data: {
         token: string;
-        user: {
-            id: number;
-            email: string;
-            fullName: string;
-            role: string;
-        };
+        id: number;
+        email: string;
+        fullName: string;
+        role: string;
     };
     message?: string;
+    status?: number;
 }
 
 export const authService = {
@@ -41,12 +40,12 @@ export const authService = {
     },
 
     getProfile: async () => {
-        const response = await api.get('/users/profile');
+        const response = await api.get('/users/me');
         return response.data;
     },
 
     updateProfile: async (data: any) => {
-        const response = await api.put('/users/profile', data);
+        const response = await api.put('/users/me', data);
         return response.data;
     },
 

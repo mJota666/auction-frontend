@@ -7,7 +7,7 @@ import { Clock, User as UserIcon, Star, MessageCircle, Send } from 'lucide-react
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const navigate = useNavigate();
     
     const [product, setProduct] = useState<Product | null>(null);
@@ -20,6 +20,8 @@ const ProductDetail: React.FC = () => {
     const [submittingQuestion, setSubmittingQuestion] = useState(false);
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const isSeller = user && product && user.id === product.sellerId;
 
     useEffect(() => {
         if (id) {
@@ -355,19 +357,31 @@ const ProductDetail: React.FC = () => {
                                 <MessageCircle className="w-5 h-5 mr-2 text-[#6C63FF]" />
                                 Ask a Question
                             </h3>
-                            <form onSubmit={handleAskQuestion}>
-                                <textarea 
-                                    className="w-full neu-inset p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 transition-all resize-none mb-4"
-                                    rows={4}
-                                    placeholder="Type your question here..."
-                                    value={questionText}
-                                    onChange={(e) => setQuestionText(e.target.value)}
-                                ></textarea>
-                                <button type="submit" disabled={submittingQuestion} className="w-full neu-btn px-6 py-3 rounded-xl text-sm font-bold text-[#3D4852] flex items-center justify-center disabled:opacity-50">
-                                    <Send className="w-4 h-4 mr-2" />
-                                    {submittingQuestion ? 'Sending...' : 'Send Question'}
-                                </button>
-                            </form>
+                            
+                            {isSeller ? (
+                                <div className="neu-inset p-4 rounded-xl text-center">
+                                    <p className="text-[#6B7280] font-medium text-sm">
+                                        You are the seller of this product.
+                                    </p>
+                                    <p className="text-[#6C63FF] font-bold text-xs mt-1">
+                                        You can reply to questions in the list.
+                                    </p>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleAskQuestion}>
+                                    <textarea 
+                                        className="w-full neu-inset p-4 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 transition-all resize-none mb-4"
+                                        rows={4}
+                                        placeholder="Type your question here..."
+                                        value={questionText}
+                                        onChange={(e) => setQuestionText(e.target.value)}
+                                    ></textarea>
+                                    <button type="submit" disabled={submittingQuestion} className="w-full neu-btn px-6 py-3 rounded-xl text-sm font-bold text-[#3D4852] flex items-center justify-center disabled:opacity-50">
+                                        <Send className="w-4 h-4 mr-2" />
+                                        {submittingQuestion ? 'Sending...' : 'Send Question'}
+                                    </button>
+                                </form>
+                            )}
                         </div>
                     </div>
 

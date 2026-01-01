@@ -33,20 +33,46 @@ const Login: React.FC = () => {
 
     try {
       const response = await authService.login(data);
-      console.log('Login API Response:', response);
-      
-      const token = response.data?.token;
-      console.log('Extracted Token:', token);
 
-      const user = response.data?.user || { email: data.email, fullName: 'User', id: 0, role: 'USER' };
-      console.log('Extracted User:', user);
+      // Extract token (handle wrapped or flat)
+      // Force cast to any to handle flexible backend response structures without TS errors
+      const responseData: any = response.data || response;
+      const token = responseData.token;
 
       if (token) {
+          // Extract User
+          // Case 1: Nested { data: { user: { ... } } }
+          let user = responseData.user;
+          
+          // Case 2: Flat { data: { token: '...', role: 'SELLER', ... } }
+          if (!user && (responseData.role || responseData.email)) {
+             // Explicitly map fields to clean User object
+             user = {
+                 id: responseData.id || 0,
+                 email: responseData.email || data.email,
+                 role: responseData.role || 'USER',
+                 fullName: responseData.fullName || responseData.fullname || responseData.name || 'User' 
+             };
+          }
+
+          // Case 3: Fallback
+          if (!user) {
+             user = { email: data.email, fullName: 'User', id: 0, role: 'USER' };
+          }
+
+          // Normalize Role
+          if (user) {
+              const role = user.role ? user.role.toUpperCase() : 'USER';
+              user = { ...user, role };
+          }
+          
+          console.log('Final Login User:', user);
           login(token, user);
           toast.success('Login successful!');
           navigate('/');
+
       } else {
-          throw new Error('No token received');
+          throw new Error('No token received from server');
       }
 
     } catch (err: any) {
@@ -71,7 +97,7 @@ const Login: React.FC = () => {
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full md:w-1/2 h-full flex items-center justify-center p-8 relative z-30">
+      <div className="w-full md:w-1/2 h-full flex items-center justify-center p-8 relative z-30 flex-col">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Sign in</h1>
@@ -84,6 +110,7 @@ const Login: React.FC = () => {
           </div>
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            {/* ... fields ... */}
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="email-address" className="sr-only">Email address</label>

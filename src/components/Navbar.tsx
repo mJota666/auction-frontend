@@ -5,6 +5,7 @@ import { User, LogOut, PlusCircle } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  console.log("user ne:", user)
   const location = useLocation();
   const isHomePage = location.pathname === '/';
 
@@ -49,9 +50,12 @@ const Navbar: React.FC = () => {
         {isAuthenticated ? (
           <>
              <span className="text-sm font-medium text-[#3D4852] hidden sm:block">Hi, {user?.fullName}</span>
-             <Link to="/create-auction" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Create Auction">
-                <PlusCircle size={20} />
-             </Link>
+             {/* Debug: {console.log('Navbar User Debug:', user)} */}
+             {(user?.role?.toUpperCase() === 'SELLER' || user?.role?.toUpperCase() === 'ADMIN') && (
+                 <Link to="/create-auction" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Create Auction">
+                    <PlusCircle size={20} />
+                 </Link>
+             )}
              <Link to="/profile" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Profile">
                 <User size={20} />
              </Link>

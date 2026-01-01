@@ -4,6 +4,7 @@ export interface RegisterData {
     fullName: string;
     email: string;
     password: string;
+    address?: string;
 }
 
 export interface LoginData {
@@ -28,7 +29,8 @@ export const authService = {
         const payload = {
             fullname: data.fullName,
             email: data.email,
-            password: data.password
+            password: data.password,
+            address: data.address
         };
         const response = await api.post<AuthResponse>('/auth/register', payload);
         return response.data;
@@ -46,6 +48,11 @@ export const authService = {
 
     updateProfile: async (data: any) => {
         const response = await api.put('/users/me', data);
+        return response.data;
+    },
+
+    verifyAccount: async (email: string, otp: string) => {
+        const response = await api.post('/auth/verify', { email, otp });
         return response.data;
     },
 

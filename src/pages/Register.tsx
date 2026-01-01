@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import AuthScene from '../components/AuthScene';
 import { authService } from '../services/auth';
 import { toast } from 'react-toastify';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full Name must be at least 2 characters'),
@@ -26,6 +27,20 @@ const Register: React.FC = () => {
   const [step, setStep] = React.useState<'info' | 'otp'>('info');
   const [otp, setOtp] = React.useState('');
   const [tempData, setTempData] = React.useState<RegisterFormInputs | null>(null);
+  
+  // Captcha State
+  const [captchaVerified, setCaptchaVerified] = React.useState(false);
+
+  const onCaptchaChange = (token: string | null) => {
+      if (token) {
+          setCaptchaVerified(true);
+      } else {
+          setCaptchaVerified(false);
+      }
+  };
+
+  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Test Key (always works for localhost)
+
   const navigate = useNavigate();
 
   const {
@@ -37,39 +52,45 @@ const Register: React.FC = () => {
   });
 
   const onInfoSubmit = async (data: RegisterFormInputs) => {
-    // Simulate sending OTP
     setLoading(true);
-    setTimeout(() => {
+    try {
+        // Step 1: Register (Backend sends OTP email)
+        await authService.register({
+            fullName: data.fullName,
+            email: data.email,
+            password: data.password,
+            address: data.address
+        });
+        
         setTempData(data);
         setStep('otp');
+        toast.success(`Account created! OTP sent to ${data.email}`);
+        
+    } catch (err: any) {
+        console.error('Registration error:', err);
+        // User requested to proceed to OTP even if error (likely Email send failure but User created)
+        toast.warning(err.response?.data?.message || 'Registration issue, attempting verification...');
+        setTempData(data);
+        setStep('otp');
+    } finally {
         setLoading(false);
-        toast.info(`OTP sent to ${data.email} (Simulated: 123456)`);
-    }, 1000);
+    }
   };
 
   const onOtpSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (otp !== '123456') {
-          toast.error('Invalid OTP');
-          return;
-      }
-      
-      if (!tempData) return;
+      if (!tempData?.email) return;
 
       setLoading(true);
       try {
-        await authService.register({
-            fullName: tempData.fullName,
-            email: tempData.email,
-            password: tempData.password,
-            // address: tempData.address // Backend might need address update
-        });
-        toast.success('Registration successful! Please login.');
+        // Step 2: Verify OTP
+        await authService.verifyAccount(tempData.email, otp);
+        
+        toast.success('Verification successful! You can now login.');
         navigate('/login');
       } catch (err: any) {
-        console.error('Registration error:', err);
-        toast.error(err.response?.data?.message || err.message || 'Registration failed');
-        setStep('info'); // Go back on error
+        console.error('Verification error:', err);
+        toast.error(err.response?.data?.message || err.message || 'Verification failed');
       } finally {
         setLoading(false);
       }
@@ -167,13 +188,14 @@ const Register: React.FC = () => {
                   </div>
                 </div>
 
-                {/* reCaptcha Placeholder */}
+                {/* Real Google reCaptcha */}
                 <div className="flex justify-center my-4">
-                    <div className="bg-gray-100 border border-gray-300 rounded p-4 text-center text-sm text-gray-500 w-full flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-gray-400 rounded-sm"></div>
-                        <span>I'm not a robot (reCaptcha)</span>
-                    </div>
+                    <ReCAPTCHA
+                        sitekey={siteKey}
+                        onChange={onCaptchaChange}
+                    />
                 </div>
+                {!siteKey && <p className="text-xs text-center text-red-500">Missing VITE_RECAPTCHA_SITE_KEY in .env</p>}
 
                 <div className="flex items-center">
                   <input
@@ -191,10 +213,10 @@ const Register: React.FC = () => {
                 <div>
                   <button
                     type="submit"
-                    disabled={loading}
-                    className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
+                    disabled={loading || !captchaVerified}
+                    className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${loading || !captchaVerified ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'}`}
                   >
-                    {loading ? 'Processing...' : 'Next: Verify OTP'}
+                    {loading ? 'Processing...' : 'Register Account'}
                   </button>
                 </div>
               </form>
@@ -207,10 +229,10 @@ const Register: React.FC = () => {
                         value={otp}
                         onChange={(e) => setOtp(e.target.value)}
                         className="block w-full text-center text-2xl tracking-widest rounded-md border-gray-300 shadow-sm border p-3"
-                        placeholder="123456"
+                        placeholder="______"
                         maxLength={6}
                       />
-                      <p className="text-xs text-gray-500 mt-2">Simulated OTP is 123456</p>
+                      <p className="text-xs text-gray-500 mt-2">Check your email for the code</p>
                   </div>
                   <div className="flex space-x-4">
                       <button
@@ -225,7 +247,7 @@ const Register: React.FC = () => {
                         disabled={loading}
                         className="w-1/2 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                       >
-                        {loading ? 'Verifying...' : 'Complete Register'}
+                        {loading ? 'Verifying...' : 'Verify OTP'}
                       </button>
                   </div>
               </form>

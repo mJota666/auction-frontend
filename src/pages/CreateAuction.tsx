@@ -20,11 +20,12 @@ const createAuctionSchema = z.object({
   endAt: z.string().refine((val) => new Date(val) > new Date(), {
       message: 'End date must be in the future'
   }),
+  thumbnailUrl: z.string().url('Must be a valid URL'),
   imageUrls: z.array(
       z.object({
           url: z.string().url('Must be a valid URL')
       })
-  ).min(3, 'At least 3 images are required'),
+  ).min(3, 'At least 3 additional images are required'),
   categoryId: z.coerce.number().min(1, 'Category is required'),
   autoExtend: z.boolean().default(false)
 }).refine((data) => {
@@ -47,6 +48,7 @@ const CreateAuction: React.FC = () => {
     defaultValues: {
         title: '',
         description: '',
+        thumbnailUrl: '',
         imageUrls: [{ url: '' }, { url: '' }, { url: '' }],
         startPrice: 0,
         stepPrice: 0,
@@ -116,9 +118,12 @@ const CreateAuction: React.FC = () => {
     try {
         const payload = {
             ...data,
-            imageUrls: data.imageUrls.map(img => img.url), // Flatten to string array
+            ...data,
+            imageUrls: [data.thumbnailUrl, ...data.imageUrls.map(img => img.url)], // Merge thumbnail + additional images
             buyNowPrice: data.buyNowPrice || undefined // Ensure undefined if 0 or empty
         };
+        // Remove thumbnailUrl from payload as backend expects just imageUrls
+        delete (payload as any).thumbnailUrl;
 
         await productService.createProduct(payload);
         toast.success('Auction created successfully!');
@@ -260,35 +265,52 @@ const CreateAuction: React.FC = () => {
             </div>
         </div>
 
-        {/* Images */}
-        <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Images (Min 3)</label>
-            <div className="space-y-2">
-                {fields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2">
-                        <input
-                            {...register(`imageUrls.${index}.url`)}
-                            placeholder={`Image URL ${index + 1}`}
-                            className="flex-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-                        />
-                        {index > 2 && (
-                            <button type="button" onClick={() => remove(index)} className="text-red-600 hover:text-red-800">
-                                Remove
-                            </button>
-                        )}
-                    </div>
-                ))}
+        {/* Images Section */}
+        <div className="space-y-6 border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900">Product Images</h3>
+            
+            {/* Main Image (Thumbnail) */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Main Image (Thumbnail)</label>
+                <input 
+                    {...register('thumbnailUrl')} 
+                    placeholder="Enter URL for the main display image"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" 
+                />
+                {errors.thumbnailUrl && <p className="text-red-500 text-xs mt-1">{errors.thumbnailUrl.message}</p>}
+                {/* Preview Thumbnail */}
+                {/* We won't implement preview logic complexly here, but just input for now. */}
             </div>
-            <button
-                type="button"
-                onClick={() => append({ url: '' })}
-                className="mt-2 text-sm text-indigo-600 hover:text-indigo-800"
-            >
-                + Add another image
-            </button>
-            {errors.imageUrls && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.message}</p>}
-            {/* Show error for specific fields if needed, but root error handles min length */}
-            {errors.imageUrls?.root && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.root.message}</p>}
+
+            {/* Additional Images */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Additional Images (Min 3)</label>
+                <div className="space-y-2">
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="flex gap-2">
+                            <input
+                                {...register(`imageUrls.${index}.url`)}
+                                placeholder={`Additional Image URL ${index + 1}`}
+                                className="flex-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                            />
+                            {index > 2 && (
+                                <button type="button" onClick={() => remove(index)} className="text-red-600 hover:text-red-800">
+                                    Remove
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <button
+                    type="button"
+                    onClick={() => append({ url: '' })}
+                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-800"
+                >
+                    + Add another image
+                </button>
+                {errors.imageUrls && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.message}</p>}
+                {errors.imageUrls?.root && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.root.message}</p>}
+            </div>
         </div>
 
         {/* End Date & Auto Extend */}

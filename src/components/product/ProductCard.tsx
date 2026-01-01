@@ -20,7 +20,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
     // Image source priority: thumbnailUrl -> imageUrls[0] -> placeholder
     // @ts-ignore
-    const displayImage = product.thumbnailUrl || (product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : 'https://via.placeholder.com/400x400?text=No+Image');
+    const displayImage = product.thumbnailUrl || (product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : 'https://placehold.co/400x400?text=No+Image');
 
     return (
         <div className="neu-extruded overflow-hidden group hover:z-10 relative">
@@ -31,7 +31,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         alt={product.title} 
                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=No+Image';
+                            const target = e.target as HTMLImageElement;
+                            if (!target.src.includes('placehold.co')) {
+                                target.src = 'https://placehold.co/400x400?text=No+Image';
+                            }
                         }}
                     />
                     {isExpired && (

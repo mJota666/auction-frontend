@@ -10,7 +10,6 @@ interface ProductState {
     currentPage: number;
     filters: {
         sortBy: string;
-        sortDir: 'asc' | 'desc';
         query: string;
         categoryId: string | null;
     };
@@ -26,8 +25,7 @@ const getInitialState = (): ProductState => {
         totalPages: 0,
         currentPage: 0,
         filters: {
-            sortBy: 'createdAt',
-            sortDir: 'desc',
+            sortBy: '',
             query: params.get('query') || '',
             categoryId: params.get('categoryId'),
         },

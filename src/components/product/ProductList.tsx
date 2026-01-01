@@ -31,12 +31,22 @@ const ProductList: React.FC = () => {
             const params: any = {
                 page: currentPage,
                 size: 12,
-                sortBy: filters.sortBy,
-                sortDir: filters.sortDir
             };
+
+            // Backend specific sort logic
+            if (filters.sortBy) {
+                params.sortBy = filters.sortBy;
+            }
             
-            if (filters.query) params.query = filters.query;
-            if (filters.categoryId) params.categoryId = Number(filters.categoryId);
+            if (filters.query) {
+                params.query = filters.query;
+                params.keyword = filters.query;
+            }
+            if (filters.categoryId) {
+                params.categoryId = Number(filters.categoryId);
+                params.category_id = Number(filters.categoryId);
+                params.category = Number(filters.categoryId);
+            }
             
             console.log('Fetching products with params:', params); // DEBUG Log
 
@@ -119,19 +129,18 @@ const ProductList: React.FC = () => {
 
                             {/* Sort Dropdown */}
                             <div className="relative w-full sm:w-auto">
-                                <select 
-                                    value={`${filters.sortBy}-${filters.sortDir}`}
-                                    onChange={(e) => {
-                                        const [field, dir] = e.target.value.split('-');
-                                        dispatch({ type: 'SET_FILTER', payload: { sortBy: field, sortDir: dir as 'asc'|'desc' } });
-                                    }}
-                                    className="appearance-none block w-full sm:w-48 pl-4 pr-10 py-3 neu-extruded rounded-2xl text-sm font-bold text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 cursor-pointer hover:text-[#6C63FF] transition-colors"
-                                >
-                                    <option value="createdAt-desc">Newest Arrivals</option>
-                                    <option value="endAt-asc">Ending Soon</option>
-                                    <option value="currentPrice-asc">Price: Low to High</option>
-                                    <option value="currentPrice-desc">Price: High to Low</option>
-                                </select>
+                                    <select 
+                                        value={filters.sortBy || ''}
+                                        onChange={(e) => {
+                                            dispatch({ type: 'SET_FILTER', payload: { sortBy: e.target.value } });
+                                        }}
+                                        className="appearance-none block w-full sm:w-48 pl-4 pr-10 py-3 neu-extruded rounded-2xl text-sm font-bold text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 cursor-pointer hover:text-[#6C63FF] transition-colors"
+                                    >
+                                        <option value="">Newest Arrivals</option>
+                                        <option value="end_at_asc">Ending Soon</option>
+                                        <option value="price_asc">Price: Low to High</option>
+                                        <option value="price_desc">Price: High to Low</option>
+                                    </select>
                                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#6B7280]">
                                     <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
                                 </div>

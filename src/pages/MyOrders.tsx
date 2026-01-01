@@ -50,7 +50,7 @@ const MyOrders: React.FC = () => {
                                             <div className="flex-shrink-0 h-16 w-16">
                                                 <img 
                                                     className="h-16 w-16 rounded-md object-cover" 
-                                                    src={order.productImage || 'https://via.placeholder.com/100'} 
+                                                    src={order.productImage || 'https://placehold.co/100x100?text=No+Image'} 
                                                     alt={order.productTitle} 
                                                 />
                                             </div>

@@ -139,7 +139,7 @@ const ProductDetail: React.FC = () => {
                 <div className="neu-extruded p-6">
                      <div className="neu-inset rounded-2xl overflow-hidden h-[400px] flex items-center justify-center bg-[#E0E5EC] relative group">
                          <img 
-                            src={product.imageUrls?.[currentImageIndex] || 'https://via.placeholder.com/600'} 
+                            src={product.imageUrls?.[currentImageIndex] || 'https://placehold.co/600x400?text=No+Image'} 
                             alt={product.title} 
                             className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
                          />

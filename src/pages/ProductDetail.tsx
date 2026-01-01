@@ -14,12 +14,19 @@ const ProductDetail: React.FC = () => {
     const [bids, setBids] = useState<Bid[]>([]);
     const [bidAmount, setBidAmount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
     useEffect(() => {
         if (id) {
             fetchProductData(id);
         }
     }, [id]);
+
+    useEffect(() => {
+        if (product?.categoryId) {
+            fetchRelatedProducts(product.categoryId);
+        }
+    }, [product?.categoryId]);
 
     const fetchProductData = async (productId: string) => {
         setLoading(true);
@@ -29,7 +36,10 @@ const ProductDetail: React.FC = () => {
                 productService.getBids(productId)
             ]);
             setProduct(productData);
-            setBids(bidsData);
+            
+            // Sort bids by amount desc to find highest
+            const sortedBids = (bidsData || []).sort((a: Bid, b: Bid) => b.amount - a.amount);
+            setBids(sortedBids);
             
             // Set default bid amount to current price + step or start price
             const currentPrice = productData.currentPrice || productData.startPrice;
@@ -39,6 +49,18 @@ const ProductDetail: React.FC = () => {
             toast.error('Failed to load product details');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchRelatedProducts = async (catId: number) => {
+        try {
+            // Fetch 5 related products
+            const data = await productService.searchProducts({ categoryId: catId, size: 5 });
+            const list = Array.isArray(data) ? data : data.content || [];
+            // Filter out current product
+            setRelatedProducts(list.filter((p: Product) => p.id !== Number(id)).slice(0, 5));
+        } catch (error) {
+            console.error('Failed to fetch related products', error);
         }
     };
 
@@ -67,15 +89,31 @@ const ProductDetail: React.FC = () => {
         }
     };
 
+    const getRelativeTime = (isoDate: string) => {
+        const date = new Date(isoDate);
+        const now = new Date();
+        const diffMs = date.getTime() - now.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (diffMs < 0) return 'Ended';
+        if (diffDays > 3) return date.toLocaleString(); // Absolute date if > 3 days
+        if (diffDays > 0) return `${diffDays} days ${diffHours} hours left`;
+        if (diffHours > 0) return `${diffHours} hours ${diffMinutes} minutes left`;
+        return `${diffMinutes} minutes left`;
+    };
+
     if (loading) return <div className="flex justify-center py-20">Loading...</div>;
     if (!product) return <div className="text-center py-20">Product not found</div>;
+
+    const highestBidder = bids.length > 0 ? bids[0] : null;
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Image Section */}
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                     {/* Simplified Carousel/Image Display */}
                      <img 
                         src={product.imageUrls?.[0] || 'https://via.placeholder.com/600'} 
                         alt={product.title} 
@@ -98,26 +136,50 @@ const ProductDetail: React.FC = () => {
                             </span>
                              <div className="flex items-center text-sm text-gray-500">
                                  <Clock className="w-4 h-4 mr-1" />
-                                 Ends: {new Date(product.endAt).toLocaleString()}
+                                 Ends: <span className="font-semibold ml-1">{getRelativeTime(product.endAt)}</span>
                              </div>
                          </div>
                     </div>
                     
-                    <div className="border-t border-b border-gray-200 py-4">
-                        <div className="flex justify-between items-baseline">
-                            <span className="text-sm text-gray-500">Current Price</span>
-                            <span className="text-3xl font-bold text-indigo-600">
+                    <div className="border-t border-b border-gray-200 py-4 grid grid-cols-2 gap-4">
+                         {/* Price Info */}
+                        <div>
+                            <span className="text-sm text-gray-500 block">Current Price</span>
+                            <span className="text-3xl font-bold text-indigo-600 block">
                                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.currentPrice || product.startPrice)}
                             </span>
+                            <span className="text-xs text-gray-500">Start: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</span>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">Start Price: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</p>
+                        
+                        {/* Seller & Highest Bidder */}
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Seller:</span>
+                                {/* Mock Seller Info */}
+                                <span className="font-medium">User #{product.sellerId || '?'} (Rating: 4.8★)</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Highest Bidder:</span>
+                                <span className="font-medium text-indigo-600">
+                                    {highestBidder ? `${highestBidder.bidderName} (Rating: 5.0★)` : 'No bids yet'}
+                                </span>
+                            </div>
+                            {product.buyNowPrice && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Buy Now:</span>
+                                    <span className="font-medium text-green-600">
+                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.buyNowPrice)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="bg-gray-50 p-6 rounded-lg">
                         {product.status === 'ACTIVE' ? (
                             <form onSubmit={handlePlaceBid} className="space-y-4">
                                 <div>
-                                    <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700">Your Bid</label>
+                                    <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700">Your Bid (Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)})</label>
                                     <div className="mt-1 relative rounded-md shadow-sm">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <span className="text-gray-500 sm:text-sm">₫</span>
@@ -133,9 +195,6 @@ const ProductDetail: React.FC = () => {
                                             min={(product.currentPrice || product.startPrice) + product.stepPrice}
                                         />
                                     </div>
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Min bid: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)}
-                                    </p>
                                 </div>
                                 <button
                                     type="submit"
@@ -153,16 +212,33 @@ const ProductDetail: React.FC = () => {
 
                     <div>
                         <h3 className="text-lg font-medium text-gray-900">Description</h3>
-                        <div className="mt-2 text-gray-600 text-sm whitespace-pre-line">
-                            {product.description}
-                        </div>
+                         {/* Dangerous HTML rendering for Quill, assuming sanitized or trusted */}
+                        <div className="mt-2 text-gray-600 text-sm prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
                     </div>
                 </div>
             </div>
 
+            {/* Related Products */}
+            {relatedProducts.length > 0 && (
+                <div className="mt-12">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Related Products</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                        {relatedProducts.map(p => (
+                             <div key={p.id} onClick={() => navigate(`/products/${p.id}`)} className="cursor-pointer border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                <img src={p.imageUrls?.[0]} alt={p.title} className="w-full h-32 object-contain mb-2" />
+                                <h3 className="text-sm font-medium truncate">{p.title}</h3>
+                                <p className="text-indigo-600 font-bold text-sm">
+                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.currentPrice || p.startPrice)}
+                                </p>
+                             </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Bid History */}
             <div className="mt-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Bid History</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Bid History ({bids.length})</h2>
                 <div className="bg-white shadow overflow-hidden rounded-md">
                     <ul className="divide-y divide-gray-200">
                         {bids.length > 0 ? (

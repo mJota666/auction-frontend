@@ -8,7 +8,9 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-    const timeLeft = new Date(product.endAt).getTime() - new Date().getTime();
+    // Treat as UTC
+    const dateStr = product.endAt.endsWith('Z') ? product.endAt : `${product.endAt}Z`;
+    const timeLeft = new Date(dateStr).getTime() - new Date().getTime();
     const isExpired = timeLeft <= 0;
     
     // Format currency
@@ -16,14 +18,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
+    // Image source priority: thumbnailUrl -> imageUrls[0] -> placeholder
+    // @ts-ignore
+    const displayImage = product.thumbnailUrl || (product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : 'https://via.placeholder.com/400x400?text=No+Image');
+
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
             <Link to={`/products/${product.id}`}>
                 <div className="relative h-48 w-full">
                     <img 
-                        src={product.imageUrls?.[0] || 'https://via.placeholder.com/300'} 
+                        src={displayImage} 
                         alt={product.title} 
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=No+Image';
+                        }}
                     />
                     {isExpired && (
                         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -54,7 +63,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     </div>
                     <div className="flex items-center">
                         <Clock className="w-4 h-4 mr-1" />
-                        <span>{new Date(product.endAt).toLocaleDateString()}</span>
+                        <span>{new Date(dateStr).toLocaleDateString()} {new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
                 </div>
                 

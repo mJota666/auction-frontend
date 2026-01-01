@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, LogOut, PlusCircle } from 'lucide-react';
+import CategoryMenu from './CategoryMenu';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -11,6 +12,7 @@ const Navbar: React.FC = () => {
         <Link to="/">AUTO-BID</Link>
       </div>
       <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-700">
+        <CategoryMenu />
         <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
         <a href="#how-it-works" className="hover:text-blue-600 transition-colors">How it Works</a>
         <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>

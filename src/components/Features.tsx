@@ -4,26 +4,28 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
+import { Zap, Bell, ShieldCheck, BarChart4 } from 'lucide-react';
+
 const features = [
   {
     title: 'Auto-Bid System',
     desc: 'Set your max price and let our system bid for you automatically in real-time.',
-    icon: '⚡'
+    icon: <Zap size={32} className="text-blue-500" />
   },
   {
     title: 'Instant Notifications',
     desc: 'Get notified immediately when you are outbid so you never miss a deal.',
-    icon: '🔔'
+    icon: <Bell size={32} className="text-yellow-500" />
   },
   {
     title: 'Secure Payments',
     desc: 'End-to-end encrypted transactions with full payment tracing history.',
-    icon: '🔒'
+    icon: <ShieldCheck size={32} className="text-green-500" />
   },
   {
     title: 'Seller Controls',
     desc: 'Powerful dashboard for sellers to manage listings and track performance.',
-    icon: '📊'
+    icon: <BarChart4 size={32} className="text-purple-500" />
   }
 ];
 
@@ -56,7 +58,7 @@ const Features: React.FC = () => {
       <div className="features-grid">
         {features.map((f, i) => (
           <div key={i} className="glass-card feature-card">
-            <div className="feature-icon">{f.icon}</div>
+            <div className="feature-icon mb-4 bg-gray-100/50 p-4 rounded-full inline-block backdrop-blur-sm shadow-sm">{f.icon}</div>
             <h3 className="feature-title">{f.title}</h3>
             <p className="feature-desc">{f.desc}</p>
           </div>

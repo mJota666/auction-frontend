@@ -5,7 +5,7 @@ import HeroOverlay from '../components/HeroOverlay';
 import Features from '../components/Features';
 import HowItWorks from '../components/HowItWorks';
 import CTA from '../components/CTA';
-import ProductList from '../components/product/ProductList';
+import FeaturedSection from '../components/FeaturedSection';
 
 const LandingPage: React.FC = () => {
   return (
@@ -14,8 +14,10 @@ const LandingPage: React.FC = () => {
       <Navbar />
       <HeroOverlay />
       
-      <div className="bg-white relative z-10 py-10" style={{ marginTop: '100vh' }}>
-         <ProductList />
+      <div className="bg-white relative z-10" style={{ marginTop: '100vh' }}>
+         <FeaturedSection title="Ending Soon" sortBy="endAt" sortDir="asc" />
+         <FeaturedSection title="Hot Auctions" sortBy="bidCount" sortDir="desc" />
+         <FeaturedSection title="High Value" sortBy="currentPrice" sortDir="desc" />
       </div>
 
       <Features />

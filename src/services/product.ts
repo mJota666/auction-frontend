@@ -9,10 +9,13 @@ export interface Product {
     stepPrice: number;
     endAt: string;
     imageUrls: string[];
+    thumbnailUrl?: string; // Add this
+    categoryName?: string; // Add this
     categoryId?: number;
     sellerId?: number;
     buyNowPrice?: number;
     autoExtend?: boolean;
+    createdAt?: string;
     status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
 }
 
@@ -26,7 +29,8 @@ export interface Bid {
 export const productService = {
     searchProducts: async (params?: any) => {
         const response = await api.get('/products/search', { params });
-        return response.data; // Expecting { content: Product[], totalPages, ... }
+        // Unwrap API standard response if needed ({ data: { content: [] }, ... })
+        return response.data && response.data.data ? response.data.data : response.data;
     },
 
     getProduct: async (id: number | string) => {

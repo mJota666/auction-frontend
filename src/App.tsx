@@ -1,10 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ProductProvider } from './context/ProductContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import MainLayout from './components/layout/MainLayout';
+import Navbar from './components/Navbar';
 import LandingPage from './pages/LandingPage';
 import ProductList from './components/product/ProductList';
 import Login from './pages/Login';
@@ -24,10 +26,16 @@ const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
+        <ProductProvider>
         <Routes>
           {/* Standalone Routes (No MainLayout) */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/search" element={<div className="pt-20"><ProductList /></div>} />
+          <Route path="/search" element={
+            <>
+                <Navbar />
+                <div className="pt-20"><ProductList /></div>
+            </>
+          } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
@@ -48,6 +56,7 @@ const App: React.FC = () => {
           </Route>
         </Routes>
         <ToastContainer position="bottom-right" />
+        </ProductProvider>
       </AuthProvider>
     </Router>
   );

@@ -1,79 +1,92 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { productService, type Product } from '../../services/product';
+import { productService } from '../../services/product';
 import ProductCard from './ProductCard';
 import { Search } from 'lucide-react';
+import { useProduct } from '../../context/ProductContext';
 
 const ProductList: React.FC = () => {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchParams, setSearchParams] = useSearchParams();
+    const { state, dispatch } = useProduct();
+    const { products, loading, totalPages, currentPage, filters } = state;
     
-    // Search Params
-    const [sortBy, setSortBy] = useState('createdAt');
-    const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc');
-    const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
+    // Local state for search input to prevent excessive re-renders/dispatches while typing
+    const [localQuery, setLocalQuery] = useState(filters.query);
 
-    const searchTerm = searchParams.get('query') || '';
-    const categoryId = searchParams.get('categoryId');
-    const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
-
+    // Sync URL params to Context Filters on mount or URL change
     useEffect(() => {
-        fetchProducts();
-    }, [sortBy, sortDir, page, searchTerm, categoryId]);
+        const query = searchParams.get('query') || '';
+        const catId = searchParams.get('categoryId');
+        
+        // Only dispatch if different to avoid loops
+        if (filters.query !== query || filters.categoryId !== catId) {
+             dispatch({ type: 'SET_FILTER', payload: { query, categoryId: catId } });
+             setLocalQuery(query);
+        }
+    }, [searchParams]);
 
     const fetchProducts = async () => {
-        setLoading(true);
+        dispatch({ type: 'FETCH_INIT' });
         try {
             const params: any = {
-                page,
-                size: 12, // Grid size
-                sortBy,
-                sortDir
+                page: currentPage,
+                size: 12,
+                sortBy: filters.sortBy,
+                sortDir: filters.sortDir
             };
             
-            if (searchTerm) params.query = searchTerm;
-            if (categoryId) params.categoryId = Number(categoryId);
+            if (filters.query) params.query = filters.query;
+            if (filters.categoryId) params.categoryId = Number(filters.categoryId);
             
+            console.log('Fetching products with params:', params); // DEBUG Log
+
             const data = await productService.searchProducts(params);
             
+            let content = [];
+            let total = 0;
+
             if (data.content) {
-                setProducts(data.content);
-                setTotalPages(data.totalPages || 0);
+                content = data.content;
+                total = data.totalPages || 0;
             } else if (Array.isArray(data)) {
-                setProducts(data); // Fallback if API returns array
-            } else {
-                setProducts([]);
+                content = data;
+            } else if (data.data && Array.isArray(data.data)) {
+                 content = data.data; 
             }
+
+            dispatch({ 
+                type: 'FETCH_SUCCESS', 
+                payload: { products: content, totalPages: total } 
+            });
+            
         } catch (error) {
             console.error('Failed to fetch products', error);
-        } finally {
-            setLoading(false);
+            dispatch({ type: 'FETCH_FAILURE', payload: 'Failed to load products.' });
         }
-    };
-    
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        setPage(0);
-        // Update URL params
-        const newParams = new URLSearchParams(searchParams);
-        if (searchTerm) {
-             newParams.set('query', searchTerm);
-        } else {
-             newParams.delete('query');
-        }
-        setSearchParams(newParams);
     };
 
+    // Trigger fetch when dependencies change
+    useEffect(() => {
+        fetchProducts();
+    }, [filters, currentPage]); 
+
+    // Handlers
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        dispatch({ type: 'SET_FILTER', payload: { query: localQuery } });
+        
+        // Update URL to match
+        const newParams = new URLSearchParams(searchParams);
+        if (localQuery) newParams.set('query', localQuery);
+        else newParams.delete('query');
+        setSearchParams(newParams);
+    };
+    
     const isNewProduct = (createdAt?: string) => {
         if (!createdAt) return false;
-        // Treat as UTC if no timezone indicator
         const dateStr = createdAt.endsWith('Z') ? createdAt : `${createdAt}Z`;
-        const created = new Date(dateStr);
-        const now = new Date();
-        const diffMinutes = (now.getTime() - created.getTime()) / (1000 * 60);
-        return diffMinutes < 60; // New if created within 60 minutes
+        const diffMinutes = (new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 60);
+        return diffMinutes < 60;
     };
 
     return (
@@ -98,8 +111,8 @@ const ProductList: React.FC = () => {
                                         type="text"
                                         className="block w-full pl-10 pr-4 py-2 bg-[#F5F5F7] border-none rounded-full text-sm text-[#1d1d1f] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 focus:bg-white transition-all shadow-inner"
                                         placeholder="Search"
-                                        value={localSearchTerm}
-                                        onChange={(e) => setLocalSearchTerm(e.target.value)}
+                                        value={localQuery}
+                                        onChange={(e) => setLocalQuery(e.target.value)}
                                     />
                                 </form>
                             </div>
@@ -107,11 +120,10 @@ const ProductList: React.FC = () => {
                             {/* Sort Dropdown */}
                             <div className="relative w-full sm:w-auto">
                                 <select 
-                                    value={`${sortBy}-${sortDir}`}
+                                    value={`${filters.sortBy}-${filters.sortDir}`}
                                     onChange={(e) => {
                                         const [field, dir] = e.target.value.split('-');
-                                        setSortBy(field);
-                                        setSortDir(dir as 'asc'|'desc');
+                                        dispatch({ type: 'SET_FILTER', payload: { sortBy: field, sortDir: dir as 'asc'|'desc' } });
                                     }}
                                     className="appearance-none block w-full sm:w-48 pl-4 pr-10 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-[#1d1d1f] focus:ring-2 focus:ring-[#0071e3] focus:border-transparent transition-shadow cursor-pointer hover:border-[#0071e3]"
                                 >
@@ -153,18 +165,18 @@ const ProductList: React.FC = () => {
                         {totalPages > 1 && (
                             <div className="mt-16 flex justify-center items-center space-x-2">
                                 <button
-                                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                                    disabled={page === 0}
+                                    onClick={() => dispatch({ type: 'SET_PAGE', payload: Math.max(0, currentPage - 1) })}
+                                    disabled={currentPage === 0}
                                     className="px-6 py-2.5 border border-gray-200 text-sm font-medium rounded-full text-[#1d1d1f] bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
                                 >
                                     Previous
                                 </button>
                                 <span className="text-sm font-medium text-[#86868b] px-4">
-                                    Page {page + 1} of {totalPages}
+                                    Page {currentPage + 1} of {totalPages}
                                 </span>
                                 <button
-                                    onClick={() => setPage(p => p + 1)}
-                                    disabled={page >= totalPages - 1}
+                                    onClick={() => dispatch({ type: 'SET_PAGE', payload: currentPage + 1 })}
+                                    disabled={currentPage >= totalPages - 1}
                                     className="px-6 py-2.5 border border-gray-200 text-sm font-medium rounded-full text-[#1d1d1f] bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
                                 >
                                     Next
@@ -181,7 +193,8 @@ const ProductList: React.FC = () => {
                         <p className="mt-2 text-[#86868b]">We couldn't find any matches for your search.</p>
                         <button 
                             onClick={() => {
-                                setLocalSearchTerm('');
+                                setLocalQuery('');
+                                dispatch({ type: 'SET_FILTER', payload: { query: '' } });
                                 setSearchParams({});
                                 window.location.reload();
                             }}

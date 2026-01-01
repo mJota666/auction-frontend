@@ -90,27 +90,27 @@ const ProductList: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F5F7]">
+        <div className="min-h-screen">
             {/* Header Section */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-16 z-30">
+            <div className="bg-[#E0E5EC]/90 backdrop-blur-md border-b border-white/20 sticky top-16 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="text-center md:text-left">
-                            <h2 className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">Store.</h2>
-                            <p className="text-[#86868b] text-base mt-2 font-medium">The best way to buy the products you love.</p>
+                            <h2 className="text-3xl font-extrabold text-[#3D4852] tracking-tight">Store.</h2>
+                            <p className="text-[#6B7280] text-base mt-2 font-medium">The best way to buy the products you love.</p>
                         </div>
                         
                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
                              {/* Search Pill */}
-                             <div className="relative w-full md:w-64 group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-4 w-4 text-gray-500 group-focus-within:text-[#0071e3] transition-colors" />
+                             <div className="relative w-full md:w-72 group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <Search className="h-4 w-4 text-[#6B7280] group-focus-within:text-[#6C63FF] transition-colors" />
                                 </div>
                                 <form onSubmit={handleSearch}>
                                     <input
                                         type="text"
-                                        className="block w-full pl-10 pr-4 py-2 bg-[#F5F5F7] border-none rounded-full text-sm text-[#1d1d1f] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0071e3]/30 focus:bg-white transition-all shadow-inner"
-                                        placeholder="Search"
+                                        className="block w-full pl-10 pr-4 py-3 neu-inset-deep rounded-2xl text-sm text-[#3D4852] placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 transition-all font-medium"
+                                        placeholder="Search products..."
                                         value={localQuery}
                                         onChange={(e) => setLocalQuery(e.target.value)}
                                     />
@@ -125,14 +125,14 @@ const ProductList: React.FC = () => {
                                         const [field, dir] = e.target.value.split('-');
                                         dispatch({ type: 'SET_FILTER', payload: { sortBy: field, sortDir: dir as 'asc'|'desc' } });
                                     }}
-                                    className="appearance-none block w-full sm:w-48 pl-4 pr-10 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-[#1d1d1f] focus:ring-2 focus:ring-[#0071e3] focus:border-transparent transition-shadow cursor-pointer hover:border-[#0071e3]"
+                                    className="appearance-none block w-full sm:w-48 pl-4 pr-10 py-3 neu-extruded rounded-2xl text-sm font-bold text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 cursor-pointer hover:text-[#6C63FF] transition-colors"
                                 >
                                     <option value="createdAt-desc">Newest Arrivals</option>
                                     <option value="endAt-asc">Ending Soon</option>
                                     <option value="currentPrice-asc">Price: Low to High</option>
                                     <option value="currentPrice-desc">Price: High to Low</option>
                                 </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#6B7280]">
                                     <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
                                 </div>
                             </div>
@@ -144,16 +144,18 @@ const ProductList: React.FC = () => {
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {loading ? (
                     <div className="flex justify-center h-64 items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1d1d1f]"></div>
+                        <div className="w-16 h-16 rounded-full neu-extruded flex items-center justify-center animate-spin">
+                            <div className="w-8 h-8 rounded-full border-4 border-[#6C63FF] border-t-transparent"></div>
+                        </div>
                     </div>
                 ) : products.length > 0 ? (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {products.map((product) => (
                                 <div key={product.id} className="relative fade-in-up h-full">
                                     {isNewProduct(product.createdAt) && (
-                                        <span className="absolute top-4 right-4 z-20 inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-[#0071e3] text-white shadow-lg uppercase tracking-wider">
-                                            New
+                                        <span className="absolute -top-2 -right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-[#6C63FF] text-white text-[10px] font-bold shadow-lg animate-bounce">
+                                            NEW
                                         </span>
                                     )}
                                     <ProductCard product={product} />
@@ -163,21 +165,21 @@ const ProductList: React.FC = () => {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="mt-16 flex justify-center items-center space-x-2">
+                            <div className="mt-16 flex justify-center items-center space-x-6">
                                 <button
                                     onClick={() => dispatch({ type: 'SET_PAGE', payload: Math.max(0, currentPage - 1) })}
                                     disabled={currentPage === 0}
-                                    className="px-6 py-2.5 border border-gray-200 text-sm font-medium rounded-full text-[#1d1d1f] bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                    className="neu-btn px-8 py-3 rounded-2xl text-sm font-bold text-[#3D4852] disabled:opacity-50 disabled:shadow-none transition-all"
                                 >
                                     Previous
                                 </button>
-                                <span className="text-sm font-medium text-[#86868b] px-4">
+                                <span className="neu-inset px-6 py-2 rounded-xl text-sm font-bold text-[#6C63FF]">
                                     Page {currentPage + 1} of {totalPages}
                                 </span>
                                 <button
                                     onClick={() => dispatch({ type: 'SET_PAGE', payload: currentPage + 1 })}
                                     disabled={currentPage >= totalPages - 1}
-                                    className="px-6 py-2.5 border border-gray-200 text-sm font-medium rounded-full text-[#1d1d1f] bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                    className="neu-btn px-8 py-3 rounded-2xl text-sm font-bold text-[#3D4852] disabled:opacity-50 disabled:shadow-none transition-all"
                                 >
                                     Next
                                 </button>

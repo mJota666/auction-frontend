@@ -7,36 +7,38 @@ import CategoryMenu from './CategoryMenu';
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-4 backdrop-blur-md bg-white/10 border-b border-white/10">
-      <div className="text-2xl font-bold tracking-tighter text-slate-900">
-        <Link to="/">AUTO-BID</Link>
+    <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-4 bg-[#E0E5EC]/90 backdrop-blur-md border-b border-white/20">
+      <div className="text-2xl font-extrabold tracking-tighter text-[#3D4852] flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-[#E0E5EC] neu-extruded flex items-center justify-center text-[#6C63FF]">
+            A
+        </div>
+        AUTO-BID
       </div>
-      <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-700">
+      <div className="hidden md:flex space-x-6 text-sm font-medium text-[#6B7280]">
         <CategoryMenu />
-        <a href="#features" className="hover:text-blue-600 transition-colors">Features</a>
-        <a href="#how-it-works" className="hover:text-blue-600 transition-colors">How it Works</a>
-        <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
+        <a href="#features" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">Features</a>
+        <a href="#how-it-works" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">How it Works</a>
       </div>
       <div className="flex space-x-4 items-center">
         {isAuthenticated ? (
           <>
-             <span className="text-sm font-medium text-slate-700 hidden sm:block">Hi, {user?.fullName}</span>
-             <Link to="/create-auction" className="p-2 text-slate-700 hover:text-blue-600 transition-colors" title="Create Auction">
+             <span className="text-sm font-medium text-[#3D4852] hidden sm:block">Hi, {user?.fullName}</span>
+             <Link to="/create-auction" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Create Auction">
                 <PlusCircle size={20} />
              </Link>
-             <Link to="/profile" className="p-2 text-slate-700 hover:text-blue-600 transition-colors" title="Profile">
+             <Link to="/profile" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Profile">
                 <User size={20} />
              </Link>
-             <button onClick={logout} className="p-2 text-slate-700 hover:text-red-600 transition-colors" title="Logout">
+             <button onClick={logout} className="w-10 h-10 neu-btn text-red-500 hover:text-red-600" title="Logout">
                 <LogOut size={20} />
              </button>
           </>
         ) : (
           <>
-            <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
+            <Link to="/login" className="px-6 py-2.5 text-sm font-bold text-[#6B7280] hover:text-[#3D4852] transition-colors">
               Sign In
             </Link>
-            <Link to="/register" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/30">
+            <Link to="/register" className="neu-btn px-6 py-2.5 text-sm font-bold text-[#6C63FF] hover:text-[#5a52d5]">
               Get Started
             </Link>
           </>

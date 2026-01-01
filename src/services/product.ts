@@ -13,6 +13,7 @@ export interface Product {
     categoryName?: string; // Add this
     categoryId?: number;
     sellerId?: number;
+    sellerName?: string; // Add this
     buyNowPrice?: number;
     autoExtend?: boolean;
     createdAt?: string;
@@ -35,7 +36,8 @@ export const productService = {
 
     getProduct: async (id: number | string) => {
         const response = await api.get(`/products/${id}`);
-        return response.data;
+        // Unwrap standard API response structure
+        return response.data && response.data.data ? response.data.data : response.data;
     },
 
     createProduct: async (data: any) => {
@@ -45,7 +47,7 @@ export const productService = {
 
     getBids: async (productId: number | string) => {
         const response = await api.get(`/products/${productId}/bids`);
-        return response.data;
+        return response.data && response.data.data ? response.data.data : response.data;
     },
 
     placeBid: async (productId: number, amount: number) => {

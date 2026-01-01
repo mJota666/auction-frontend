@@ -16,6 +16,8 @@ const ProductDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
     useEffect(() => {
         if (id) {
             fetchProductData(id);
@@ -28,6 +30,18 @@ const ProductDetail: React.FC = () => {
         }
     }, [product?.categoryId]);
 
+    const nextImage = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (!product?.imageUrls) return;
+        setCurrentImageIndex((prev) => (prev === product.imageUrls!.length - 1 ? 0 : prev + 1));
+    };
+
+    const prevImage = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
+        if (!product?.imageUrls) return;
+        setCurrentImageIndex((prev) => (prev === 0 ? product.imageUrls!.length - 1 : prev - 1));
+    };
+
     const fetchProductData = async (productId: string) => {
         setLoading(true);
         try {
@@ -36,9 +50,18 @@ const ProductDetail: React.FC = () => {
                 productService.getBids(productId)
             ]);
             setProduct(productData);
+            setCurrentImageIndex(0); // Reset image index on new product load
             
             // Sort bids by amount desc to find highest
-            const sortedBids = (bidsData || []).sort((a: Bid, b: Bid) => b.amount - a.amount);
+            let validBids: Bid[] = [];
+            if (Array.isArray(bidsData)) {
+                validBids = bidsData;
+            } else if (bidsData && Array.isArray((bidsData as any).data)) {
+                 // Handle wrapped response { data: [...] }
+                 validBids = (bidsData as any).data;
+            }
+
+            const sortedBids = validBids.sort((a: Bid, b: Bid) => b.amount - a.amount);
             setBids(sortedBids);
             
             // Set default bid amount to current price + step or start price
@@ -110,124 +133,160 @@ const ProductDetail: React.FC = () => {
     const highestBidder = bids.length > 0 ? bids[0] : null;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 {/* Image Section */}
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                     <img 
-                        src={product.imageUrls?.[0] || 'https://via.placeholder.com/600'} 
-                        alt={product.title} 
-                        className="w-full h-96 object-contain bg-gray-100"
-                     />
-                     <div className="p-4 flex space-x-2 overflow-x-auto">
+                <div className="neu-extruded p-6">
+                     <div className="neu-inset rounded-2xl overflow-hidden h-[400px] flex items-center justify-center bg-[#E0E5EC] relative group">
+                         <img 
+                            src={product.imageUrls?.[currentImageIndex] || 'https://via.placeholder.com/600'} 
+                            alt={product.title} 
+                            className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
+                         />
+                         
+                         {/* Navigation Arrows */}
+                         {product.imageUrls && product.imageUrls.length > 1 && (
+                            <>
+                                <button 
+                                    onClick={prevImage}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full neu-extruded flex items-center justify-center text-[#6B7280] hover:text-[#3D4852] opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                                </button>
+                                <button 
+                                    onClick={nextImage}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full neu-extruded flex items-center justify-center text-[#6B7280] hover:text-[#3D4852] opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 active:scale-95 z-10"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                </button>
+                            </>
+                         )}
+                     </div>
+                     <div className="mt-6 flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
                         {product.imageUrls?.map((url, idx) => (
-                            <img key={idx} src={url} alt={`Preview ${idx}`} className="w-20 h-20 object-cover rounded cursor-pointer border hover:border-indigo-500" />
+                            <div 
+                                key={idx} 
+                                onClick={() => setCurrentImageIndex(idx)}
+                                className={`w-20 h-20 flex-shrink-0 neu-btn p-1 cursor-pointer transition-all ${currentImageIndex === idx ? 'border-[#6C63FF] border-2 ring-2 ring-[#6C63FF]/20' : 'border-2 border-transparent hover:border-[#6C63FF]'}`}
+                            >
+                                <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover rounded-lg" />
+                            </div>
                         ))}
+                     </div>
+                     <div className="mt-4 pt-4 border-t border-gray-200/50">
+                        <h3 className="text-lg font-bold text-[#3D4852] mb-4">Description</h3>
+                        <div 
+                            className="text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto [&_a]:text-[#6C63FF] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-[#3D4852] [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-[#3D4852] [&_*]:!bg-transparent space-y-2" 
+                            dangerouslySetInnerHTML={{ __html: product.description }} 
+                        />
                      </div>
                 </div>
 
                 {/* Info Section */}
-                <div className="space-y-6">
+                <div className="space-y-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
-                         <div className="flex items-center mt-2 space-x-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {product.status}
-                            </span>
-                             <div className="flex items-center text-sm text-gray-500">
-                                 <Clock className="w-4 h-4 mr-1" />
-                                 Ends: <span className="font-semibold ml-1">{getRelativeTime(product.endAt)}</span>
+                        <h1 className="text-4xl font-extrabold text-[#3D4852] tracking-tight leading-tight">{product.title}</h1>
+                         <div className="flex items-center mt-4 space-x-4">
+                            <div className={`px-4 py-2 rounded-full flex items-center gap-2 neu-extruded border ${product.status === 'ACTIVE' ? 'border-green-500/20' : 'border-red-500/20'}`}>
+                                <span className={`relative flex h-3 w-3`}>
+                                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${product.status === 'ACTIVE' ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                                  <span className={`relative inline-flex rounded-full h-3 w-3 ${product.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                </span>
+                                <span className={`text-xs font-extrabold tracking-wider uppercase ${product.status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {product.status}
+                                </span>
+                            </div>
+                             <div className="flex items-center text-sm font-medium text-[#6B7280]">
+                                 <Clock className="w-4 h-4 mr-2" />
+                                 Ends: <span className="text-[#3D4852] ml-1">{getRelativeTime(product.endAt)}</span>
                              </div>
                          </div>
                     </div>
                     
-                    <div className="border-t border-b border-gray-200 py-4 grid grid-cols-2 gap-4">
+                    <div className="batched-neu grid grid-cols-2 gap-6">
                          {/* Price Info */}
-                        <div>
-                            <span className="text-sm text-gray-500 block">Current Price</span>
-                            <span className="text-3xl font-bold text-indigo-600 block">
+                        <div className="neu-extruded p-6 flex flex-col justify-center">
+                            <span className="text-sm font-medium text-[#6B7280] uppercase tracking-wide mb-1">Current Price</span>
+                            <span className="text-3xl font-extrabold text-[#6C63FF]">
                                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.currentPrice || product.startPrice)}
                             </span>
-                            <span className="text-xs text-gray-500">Start: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</span>
+                            <span className="text-xs font-medium text-[#A0AEC0] mt-1">Start: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</span>
                         </div>
                         
                         {/* Seller & Highest Bidder */}
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Seller:</span>
-                                {/* Mock Seller Info */}
-                                <span className="font-medium">User #{product.sellerId || '?'} (Rating: 4.8★)</span>
+                        <div className="neu-extruded p-6 space-y-3 text-sm font-medium">
+                            <div className="flex flex-col">
+                                <span className="text-[#6B7280] text-xs uppercase">Seller</span>
+                                <span className="text-[#3D4852] font-bold">{product.sellerName || `User #${product.sellerId || '?'}`}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-500">Highest Bidder:</span>
-                                <span className="font-medium text-indigo-600">
-                                    {highestBidder ? `${highestBidder.bidderName} (Rating: 5.0★)` : 'No bids yet'}
+                            <div className="flex flex-col">
+                                <span className="text-[#6B7280] text-xs uppercase">Highest Bidder</span>
+                                <span className="text-[#6C63FF] font-bold">
+                                    {highestBidder ? highestBidder.bidderName : 'No bids yet'}
                                 </span>
                             </div>
-                            {product.buyNowPrice && (
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500">Buy Now:</span>
-                                    <span className="font-medium text-green-600">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.buyNowPrice)}
-                                    </span>
-                                </div>
-                            )}
                         </div>
                     </div>
 
-                    <div className="bg-gray-50 p-6 rounded-lg">
+                    <div className="neu-extruded p-8">
                         {product.status === 'ACTIVE' ? (
-                            <form onSubmit={handlePlaceBid} className="space-y-4">
+                            <form onSubmit={handlePlaceBid} className="space-y-6">
                                 <div>
-                                    <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700">Your Bid (Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)})</label>
-                                    <div className="mt-1 relative rounded-md shadow-sm">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <span className="text-gray-500 sm:text-sm">₫</span>
+                                    <label htmlFor="bidAmount" className="block text-sm font-bold text-[#3D4852] mb-2">
+                                        Your Bid <span className="font-normal text-[#6B7280]">(Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)})</span>
+                                    </label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <span className="text-[#6B7280] font-bold">₫</span>
                                         </div>
                                         <input
-                                            type="number"
+                                            type="text"
                                             name="bidAmount"
                                             id="bidAmount"
-                                            className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2 border"
+                                            className="block w-full pl-8 pr-4 py-4 neu-inset-deep rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF] transition-all text-2xl tracking-wider"
                                             placeholder="0"
-                                            value={bidAmount}
-                                            onChange={(e) => setBidAmount(Number(e.target.value))}
-                                            min={(product.currentPrice || product.startPrice) + product.stepPrice}
+                                            value={new Intl.NumberFormat('vi-VN').format(bidAmount)}
+                                            onChange={(e) => {
+                                                // Remove non-digit characters
+                                                const rawValue = e.target.value.replace(/\D/g, '');
+                                                setBidAmount(Number(rawValue));
+                                            }}
                                         />
                                     </div>
                                 </div>
                                 <button
                                     type="submit"
-                                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    className="w-full neu-btn neu-btn-primary py-4 rounded-xl text-lg font-bold tracking-wide uppercase shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
                                 >
                                     Place Bid
                                 </button>
                             </form>
                         ) : (
-                            <div className="text-center py-4 text-gray-500">
+                            <div className="text-center py-4 text-[#6B7280] font-medium">
                                 This auction has ended.
                             </div>
                         )}
                     </div>
 
-                    <div>
-                        <h3 className="text-lg font-medium text-gray-900">Description</h3>
-                         {/* Dangerous HTML rendering for Quill, assuming sanitized or trusted */}
-                        <div className="mt-2 text-gray-600 text-sm prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
-                    </div>
+
                 </div>
             </div>
 
             {/* Related Products */}
             {relatedProducts.length > 0 && (
-                <div className="mt-12">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Related Products</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="mt-20">
+                    <h2 className="text-2xl font-extrabold text-[#3D4852] mb-8 flex items-center">
+                        <span className="w-2 h-8 bg-[#6C63FF] rounded-full mr-3"></span>
+                        Related Products
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
                         {relatedProducts.map(p => (
-                             <div key={p.id} onClick={() => navigate(`/products/${p.id}`)} className="cursor-pointer border rounded-lg p-4 hover:shadow-lg transition-shadow">
-                                <img src={p.imageUrls?.[0]} alt={p.title} className="w-full h-32 object-contain mb-2" />
-                                <h3 className="text-sm font-medium truncate">{p.title}</h3>
-                                <p className="text-indigo-600 font-bold text-sm">
+                             <div key={p.id} onClick={() => navigate(`/products/${p.id}`)} className="cursor-pointer neu-extruded p-4 hover:neu-extruded-hover transition-all">
+                                <div className="neu-inset rounded-xl p-2 mb-3 bg-[#E0E5EC]">
+                                    <img src={p.imageUrls?.[0]} alt={p.title} className="w-full h-32 object-contain mix-blend-multiply" />
+                                </div>
+                                <h3 className="text-sm font-bold text-[#3D4852] truncate mb-1">{p.title}</h3>
+                                <p className="text-[#6C63FF] font-extrabold text-sm">
                                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.currentPrice || p.startPrice)}
                                 </p>
                              </div>
@@ -237,42 +296,37 @@ const ProductDetail: React.FC = () => {
             )}
 
             {/* Bid History */}
-            <div className="mt-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Bid History ({bids.length})</h2>
-                <div className="bg-white shadow overflow-hidden rounded-md">
-                    <ul className="divide-y divide-gray-200">
+            <div className="mt-16">
+                <h2 className="text-2xl font-extrabold text-[#3D4852] mb-8 flex items-center">
+                    <span className="w-2 h-8 bg-[#6C63FF] rounded-full mr-3"></span>
+                    Bid History ({bids.length})
+                </h2>
+                <div className="neu-extruded overflow-hidden p-2 rounded-[24px]">
+                    <ul className="divide-y divide-gray-200/50">
                         {bids.length > 0 ? (
                             bids.map((bid) => (
-                                <li key={bid.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                                <li key={bid.id} className="px-6 py-4 flex items-center justify-between hover:bg-[#F0F4F8] rounded-xl transition-colors">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0">
-                                            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                                <UserIcon className="h-5 w-5 text-indigo-600" />
+                                            <div className="h-10 w-10 neu-icon-well bg-[#E0E5EC] text-[#6C63FF]">
+                                                <UserIcon className="h-5 w-5" />
                                             </div>
                                         </div>
                                         <div className="ml-4">
-                                            <p className="text-sm font-medium text-indigo-600">{bid.bidderName}</p>
-                                            <p className="text-xs text-gray-500">{new Date(bid.bidTime).toLocaleString()}</p>
+                                            <p className="text-sm font-bold text-[#3D4852]">{bid.bidderName}</p>
+                                            <p className="text-xs text-[#6B7280] font-medium">{new Date(bid.bidTime).toLocaleString()}</p>
                                         </div>
                                     </div>
-                                    <div className="text-sm font-bold text-gray-900">
+                                    <div className="text-sm font-extrabold text-[#6C63FF]">
                                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bid.amount)}
                                     </div>
                                 </li>
                             ))
                         ) : (
-                            <li className="px-6 py-4 text-center text-gray-500">No bids yet. Be the first!</li>
+                            <li className="px-6 py-8 text-center text-[#6B7280] font-medium">No bids yet. Be the first!</li>
                         )}
                     </ul>
                 </div>
-            </div>
-            
-            {/* Q&A Section Placeholder */}
-             <div className="mt-12">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Questions & Answers</h2>
-                 <div className="bg-gray-50 rounded-lg p-6 text-center text-gray-500">
-                     <p>Q&A feature is coming soon.</p>
-                 </div>
             </div>
         </div>
     );

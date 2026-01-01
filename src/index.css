@@ -1,9 +1,124 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    background-color: #f5f5f7;
-    color: #1d1d1f;
+  :root {
+    --bg-primary: #E0E5EC;
+    --text-primary: #3D4852;
+    --text-secondary: #6B7280;
+    --accent: #6C63FF;
   }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.025em;
+    /* tracking-tight */
+  }
+}
+
+@layer utilities {
+
+  /* Neumorphism Shadows */
+  .neu-extruded {
+    background: #E0E5EC;
+    box-shadow: 9px 9px 16px rgb(163, 177, 198, 0.6),
+      -9px -9px 16px rgba(255, 255, 255, 0.5);
+    border-radius: 2rem;
+    /* 32px standard for cards */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Subtle highlight border */
+  }
+
+  .neu-extruded-hover {
+    background: #E0E5EC;
+    box-shadow: 12px 12px 20px rgb(163, 177, 198, 0.7),
+      -12px -12px 20px rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+    transition: all 0.3s ease-out;
+  }
+
+  .neu-btn {
+    background: #E0E5EC;
+    box-shadow: 5px 5px 10px rgb(163, 177, 198, 0.6),
+      -5px -5px 10px rgba(255, 255, 255, 0.5);
+    border-radius: 1rem;
+    /* 16px */
+    transition: all 0.2s ease;
+    @apply flex items-center justify-center font-medium text-[#3D4852] active:translate-y-[1px];
+  }
+
+  .neu-btn:hover {
+    box-shadow: 7px 7px 14px rgb(163, 177, 198, 0.7),
+      -7px -7px 14px rgba(255, 255, 255, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .neu-btn:active {
+    box-shadow: inset 3px 3px 6px rgb(163, 177, 198, 0.6),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.5);
+    transform: translateY(1px);
+  }
+
+  .neu-btn-primary {
+    background: #6C63FF;
+    color: white;
+    box-shadow: 5px 5px 10px rgba(108, 99, 255, 0.4),
+      -5px -5px 10px rgba(255, 255, 255, 0.8);
+  }
+
+  .neu-btn-primary:hover {
+    background: #7B73FF;
+  }
+
+  .neu-inset {
+    background: #E0E5EC;
+    box-shadow: inset 6px 6px 10px rgb(163, 177, 198, 0.6),
+      inset -6px -6px 10px rgba(255, 255, 255, 0.5);
+    border-radius: 1rem;
+  }
+
+  .neu-inset-deep {
+    background: #E0E5EC;
+    box-shadow: inset 10px 10px 20px rgb(163, 177, 198, 0.7),
+      inset -10px -10px 20px rgba(255, 255, 255, 0.6);
+    border-radius: 1rem;
+    border: none;
+  }
+
+  .neu-icon-well {
+    box-shadow: inset 3px 3px 6px rgb(163, 177, 198, 0.6),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.5);
+    border-radius: 9999px;
+    @apply flex items-center justify-center;
+  }
+}
+
+/* Animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }

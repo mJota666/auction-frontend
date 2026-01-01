@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, LogOut, PlusCircle } from 'lucide-react';
-import CategoryMenu from './CategoryMenu';
+
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -10,16 +10,36 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-4 bg-[#E0E5EC]/90 backdrop-blur-md border-b border-white/20">
-      <Link to="/" className="text-2xl font-extrabold tracking-tighter text-[#3D4852] flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-[#E0E5EC] neu-extruded flex items-center justify-center text-[#6C63FF]">
-            A
+    <Link
+      to="/"
+      className="flex items-center gap-3 select-none"
+      aria-label="AUTOBID Home"
+    >
+      {/* Logo mark */}
+      <div className="w-11 h-11 rounded-2xl bg-[#E0E5EC] neu-extruded flex items-center justify-center">
+        {/* Simple mark: gradient dot + gavel-ish bars */}
+        <div className="relative w-6 h-6">
+          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#6C63FF] shadow-sm" />
+          <span className="absolute left-0 top-2 w-6 h-2 rounded-md bg-[#3D4852]/80" />
+          <span className="absolute left-2 top-4 w-4 h-2 rounded-md bg-[#3D4852]/55" />
         </div>
-        AUTO-BID
-      </Link>
+      </div>
+
+      {/* Wordmark */}
+      <div className="leading-none">
+        <div className="text-xl font-extrabold tracking-tight text-[#3D4852]">
+          <span className="opacity-70">AUTO</span>
+          <span className="text-[#6C63FF]">BID</span>
+        </div>
+        <div className="text-[11px] font-semibold tracking-widest text-[#6B7280]">
+          SMART AUCTIONS
+        </div>
+      </div>
+    </Link>
       <div className="hidden md:flex space-x-6 text-sm font-medium text-[#6B7280]">
-        <CategoryMenu />
         {isHomePage && (
             <>
+                <Link to="/search" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">Browse Auctions</Link>
                 <a href="#features" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">Features</a>
                 <a href="#how-it-works" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">How it Works</a>
             </>

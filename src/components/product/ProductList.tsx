@@ -4,11 +4,12 @@ import { productService } from '../../services/product';
 import ProductCard from './ProductCard';
 import { Search } from 'lucide-react';
 import { useProduct } from '../../context/ProductContext';
+import CategoryMenu from '../CategoryMenu';
 
 const ProductList: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { state, dispatch } = useProduct();
-    const { products, loading, totalPages, currentPage, filters } = state;
+    const { products, loading, totalPages, currentPage, filters, categories } = state;
     
     // Local state for search input to prevent excessive re-renders/dispatches while typing
     const [localQuery, setLocalQuery] = useState(filters.query);
@@ -24,6 +25,33 @@ const ProductList: React.FC = () => {
              setLocalQuery(query);
         }
     }, [searchParams]);
+
+    // Helper to find category path (Breadcrumbs)
+    const getBreadcrumbs = (targetId: string | null): { id: number; name: string }[] => {
+        if (!targetId || categories.length === 0) return [];
+        const numId = Number(targetId);
+        const path: { id: number; name: string }[] = [];
+
+        let currentId: number | undefined = numId;
+        while (currentId) {
+            const category = categories.find((c: any) => c.id === currentId);
+            if (category) {
+                path.unshift({ id: category.id, name: category.name }); // Add to beginning
+                currentId = category.parentId;
+            } else {
+                break;
+            }
+        }
+        return path;
+    };
+
+    const breadcrumbs = getBreadcrumbs(filters.categoryId);
+
+    // Helper to get all descendant IDs for a category (Using API)
+    // NOTE: We still keep local recursion as a fallback or for initial rendering if needed, 
+    // but the user explicitly requested API usage for fetching children.
+    
+    // ... breadcrumbs logic remains ...
 
     const fetchProducts = async () => {
         dispatch({ type: 'FETCH_INIT' });
@@ -42,10 +70,28 @@ const ProductList: React.FC = () => {
                 params.query = filters.query;
                 params.keyword = filters.query;
             }
+
             if (filters.categoryId) {
+                // User requirement: Call API to get children and use them for query
+                let allIds: number[] = [Number(filters.categoryId)];
+                
+                try {
+                    const childrenData = await productService.getCategoryChildren(filters.categoryId);
+                    if (childrenData && Array.isArray(childrenData)) {
+                        const childIds = childrenData.map((c: any) => c.id);
+                        allIds = [...allIds, ...childIds];
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetch category children from API, falling back to single ID', err);
+                    // Fallback to local state recursion if API fails? 
+                    // For now, adhere to "use API" strictness but safe fail.
+                }
+
                 params.categoryId = Number(filters.categoryId);
-                params.category_id = Number(filters.categoryId);
-                params.category = Number(filters.categoryId);
+                
+                if (allIds.length > 1) {
+                    params.categoryIds = allIds.join(',');
+                }
             }
             
             console.log('Fetching products with params:', params); // DEBUG Log
@@ -105,13 +151,51 @@ const ProductList: React.FC = () => {
             <div className="bg-[#E0E5EC]/90 backdrop-blur-md border-b border-white/20 sticky top-16 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div className="text-center md:text-left">
-                            <h2 className="text-3xl font-extrabold text-[#3D4852] tracking-tight">Store.</h2>
-                            <p className="text-[#6B7280] text-base mt-2 font-medium">The best way to buy the products you love.</p>
+                        <div className="text-center md:text-left flex flex-col md:block">
+                            <div className="flex items-baseline gap-2 justify-center md:justify-start">
+                                <h2 className="text-3xl font-extrabold text-[#3D4852] tracking-tight flex items-center gap-2">
+                                     <span 
+                                        className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" 
+                                        onClick={() => {
+                                            dispatch({ type: 'SET_FILTER', payload: { categoryId: null } });
+                                            setSearchParams({});
+                                        }}
+                                    >
+                                        Store
+                                    </span>
+                                    {breadcrumbs.length > 0 && breadcrumbs.map((crumb, index) => (
+                                        <React.Fragment key={crumb.id}>
+                                            <span className="opacity-30">/</span>
+                                            <span 
+                                                className={`cursor-pointer transition-colors ${index === breadcrumbs.length - 1 ? 'text-[#6C63FF]' : 'hover:text-[#6C63FF]'}`}
+                                                onClick={() => {
+                                                     dispatch({ type: 'SET_FILTER', payload: { categoryId: String(crumb.id) } });
+                                                     // Update URL parameters
+                                                     const newParams = new URLSearchParams(searchParams);
+                                                     newParams.set('categoryId', String(crumb.id));
+                                                     setSearchParams(newParams);
+                                                }}
+                                            >
+                                                {crumb.name}
+                                            </span>
+                                        </React.Fragment>
+                                    ))}
+                                    {!filters.categoryId && <span>.</span>}
+                                </h2>
+                            </div>
+                            <p className="text-[#6B7280] text-base mt-2 font-medium">
+                                {breadcrumbs.length > 0 
+                                    ? `Browse all ${breadcrumbs[breadcrumbs.length -1].name}` 
+                                    : 'The best way to buy the products you love.'}
+                            </p>
                         </div>
                         
                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto items-center">
+                             {/* Category Menu */}
+                             <CategoryMenu />
+
                              {/* Search Pill */}
+                             {/* ... */}
                              <div className="relative w-full md:w-72 group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <Search className="h-4 w-4 text-[#6B7280] group-focus-within:text-[#6C63FF] transition-colors" />
@@ -128,21 +212,39 @@ const ProductList: React.FC = () => {
                             </div>
 
                             {/* Sort Dropdown */}
-                            <div className="relative w-full sm:w-auto">
-                                    <select 
-                                        value={filters.sortBy || ''}
-                                        onChange={(e) => {
-                                            dispatch({ type: 'SET_FILTER', payload: { sortBy: e.target.value } });
-                                        }}
-                                        className="appearance-none block w-full sm:w-48 pl-4 pr-10 py-3 neu-extruded rounded-2xl text-sm font-bold text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/50 cursor-pointer hover:text-[#6C63FF] transition-colors"
-                                    >
-                                        <option value="">Newest Arrivals</option>
-                                        <option value="end_at_asc">Ending Soon</option>
-                                        <option value="price_asc">Price: Low to High</option>
-                                        <option value="price_desc">Price: High to Low</option>
-                                    </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#6B7280]">
-                                    <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                            {/* Sort Dropdown (Custom to match CategoryMenu style) */}
+                            <div className="relative group w-full sm:w-auto z-40">
+                                <button className="flex items-center justify-between w-full sm:w-48 px-4 py-3 neu-extruded rounded-2xl text-sm font-bold text-[#3D4852] hover:text-[#6C63FF] transition-all bg-[#E0E5EC]">
+                                    <span>
+                                        {filters.sortBy === 'end_at_asc' ? 'Ending Soon' : 
+                                         filters.sortBy === 'price_asc' ? 'Price: Low to High' :
+                                         filters.sortBy === 'price_desc' ? 'Price: High to Low' : 
+                                         'Newest Arrivals'}
+                                    </span>
+                                    <svg className="h-4 w-4 fill-current ml-2" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                                </button>
+                                
+                                <div className="absolute top-full mt-2 right-0 w-full sm:w-56 bg-[#E0E5EC] rounded-2xl shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] py-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 transform origin-top-right border border-white/20 px-2">
+                                    <div className="space-y-1">
+                                         {[
+                                            { label: 'Newest Arrivals', value: '' },
+                                            { label: 'Ending Soon', value: 'end_at_asc' },
+                                            { label: 'Price: Low to High', value: 'price_asc' },
+                                            { label: 'Price: High to Low', value: 'price_desc' }
+                                         ].map((option) => (
+                                            <button
+                                                key={option.value}
+                                                onClick={() => dispatch({ type: 'SET_FILTER', payload: { sortBy: option.value } })}
+                                                className={`w-full text-left px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                                                    filters.sortBy === option.value 
+                                                    ? 'neu-inset text-[#6C63FF]' 
+                                                    : 'text-[#3D4852] hover:neu-inset hover:text-[#6C63FF]'
+                                                }`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                         ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>

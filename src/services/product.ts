@@ -58,5 +58,10 @@ export const productService = {
     getCategories: async () => {
         const response = await api.get('/categories'); // Changed from /admin/categories
         return response.data;
+    },
+
+    getCategoryChildren: async (parentId: number | string) => {
+        const response = await api.get(`/categories/${parentId}/children`);
+        return response.data && response.data.data ? response.data.data : response.data;
     }
 };

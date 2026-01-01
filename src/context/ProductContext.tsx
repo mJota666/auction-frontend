@@ -4,6 +4,7 @@ import type { Product } from '../services/product';
 // 1. STATE INTERFACE
 interface ProductState {
     products: Product[];
+    categories: any[]; // Store categories globally
     loading: boolean;
     error: string | null;
     totalPages: number;
@@ -20,6 +21,7 @@ const getInitialState = (): ProductState => {
     const params = new URLSearchParams(window.location.search);
     return {
         products: [],
+        categories: [],
         loading: false,
         error: null,
         totalPages: 0,
@@ -40,7 +42,8 @@ type ProductAction =
     | { type: 'FETCH_SUCCESS'; payload: { products: Product[]; totalPages: number } }
     | { type: 'FETCH_FAILURE'; payload: string }
     | { type: 'SET_FILTER'; payload: Partial<ProductState['filters']> }
-    | { type: 'SET_PAGE'; payload: number };
+    | { type: 'SET_PAGE'; payload: number }
+    | { type: 'SET_CATEGORIES'; payload: any[] };
 
 // 4. REDUCER
 const productReducer = (state: ProductState, action: ProductAction): ProductState => {
@@ -56,6 +59,8 @@ const productReducer = (state: ProductState, action: ProductAction): ProductStat
             };
         case 'FETCH_FAILURE':
             return { ...state, loading: false, error: action.payload };
+        case 'SET_CATEGORIES':
+             return { ...state, categories: action.payload };
         case 'SET_FILTER':
             return {
                 ...state,
@@ -77,9 +82,27 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
+import { productService } from '../services/product';
+
+// ... imports
+
 // 6. PROVIDER
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(productReducer, initialState);
+
+    // Fetch categories on mount
+    React.useEffect(() => {
+        const loadCategories = async () => {
+             try {
+                 const data = await productService.getCategories();
+                 const categories = data.data && Array.isArray(data.data) ? data.data : [];
+                 dispatch({ type: 'SET_CATEGORIES', payload: categories });
+             } catch (error) {
+                 console.error('Failed to load categories', error);
+             }
+        };
+        loadCategories();
+    }, []);
 
     return (
         <ProductContext.Provider value={{ state, dispatch }}>

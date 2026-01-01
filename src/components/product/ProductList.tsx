@@ -153,35 +153,42 @@ const ProductList: React.FC = () => {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="text-center md:text-left flex flex-col md:block">
                             <div className="flex items-baseline gap-2 justify-center md:justify-start">
-                                <h2 className="text-3xl font-extrabold text-[#3D4852] tracking-tight flex items-center gap-2">
-                                     <span 
-                                        className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" 
-                                        onClick={() => {
-                                            dispatch({ type: 'SET_FILTER', payload: { categoryId: null } });
-                                            setSearchParams({});
-                                        }}
-                                    >
-                                        Store
-                                    </span>
-                                    {breadcrumbs.length > 0 && breadcrumbs.map((crumb, index) => (
-                                        <React.Fragment key={crumb.id}>
-                                            <span className="opacity-30">/</span>
-                                            <span 
-                                                className={`cursor-pointer transition-colors ${index === breadcrumbs.length - 1 ? 'text-[#6C63FF]' : 'hover:text-[#6C63FF]'}`}
-                                                onClick={() => {
-                                                     dispatch({ type: 'SET_FILTER', payload: { categoryId: String(crumb.id) } });
-                                                     // Update URL parameters
-                                                     const newParams = new URLSearchParams(searchParams);
-                                                     newParams.set('categoryId', String(crumb.id));
-                                                     setSearchParams(newParams);
-                                                }}
-                                            >
-                                                {crumb.name}
-                                            </span>
-                                        </React.Fragment>
-                                    ))}
-                                    {!filters.categoryId && <span>.</span>}
-                                </h2>
+                                {/* Stacked Layout: Breadcrumbs Top, Title Bottom */}
+                                <div className="flex flex-col gap-1 items-center md:items-start">
+                                    {/* Breadcrumbs Row */}
+                                    <div className="flex items-center gap-2 text-sm font-medium text-[#6B7280] flex-wrap justify-center md:justify-start">
+                                        <span 
+                                            className="hover:text-[#6C63FF] transition-colors cursor-pointer" 
+                                            onClick={() => {
+                                                dispatch({ type: 'SET_FILTER', payload: { categoryId: null } });
+                                                setSearchParams({});
+                                            }}
+                                        >
+                                            Store
+                                        </span>
+                                        {breadcrumbs.map((crumb) => (
+                                            <React.Fragment key={crumb.id}>
+                                                <span className="opacity-40">/</span>
+                                                <span 
+                                                    className="hover:text-[#6C63FF] transition-colors cursor-pointer"
+                                                    onClick={() => {
+                                                         dispatch({ type: 'SET_FILTER', payload: { categoryId: String(crumb.id) } });
+                                                         const newParams = new URLSearchParams(searchParams);
+                                                         newParams.set('categoryId', String(crumb.id));
+                                                         setSearchParams(newParams);
+                                                    }}
+                                                >
+                                                    {crumb.name}
+                                                </span>
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+
+                                    {/* Title Row */}
+                                    <h2 className="text-3xl font-extrabold text-[#3D4852] tracking-tight">
+                                        {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Store'}
+                                    </h2>
+                                </div>
                             </div>
                             <p className="text-[#6B7280] text-base mt-2 font-medium">
                                 {breadcrumbs.length > 0 

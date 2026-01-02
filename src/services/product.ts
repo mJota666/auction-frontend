@@ -21,6 +21,7 @@ export interface Product {
     currentWinnerName?: string; // Added based on BE feedback
     sellerRatingPositive?: number; // Added based on BE feedback
     sellerRatingNegative?: number; // Added based on BE feedback
+    allowNewBidders?: boolean; // Added for Bidding Logic
     status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
 }
 

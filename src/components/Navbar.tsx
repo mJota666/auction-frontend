@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, LogOut, PlusCircle } from 'lucide-react';
+import { User, LogOut, PlusCircle, Heart } from 'lucide-react';
 
 
 const Navbar: React.FC = () => {
@@ -56,6 +56,11 @@ const Navbar: React.FC = () => {
                     <PlusCircle size={20} />
                  </Link>
              )}
+             <Link to="/favorites" className="w-10 h-10 neu-btn hover:text-pink-500 text-pink-500/80" title="Watchlist">
+                <div className="relative">
+                    <Heart size={20} className="fill-current" />
+                </div>
+             </Link>
              <Link to="/profile" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Profile">
                 <User size={20} />
              </Link>

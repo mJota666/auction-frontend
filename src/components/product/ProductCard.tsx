@@ -1,13 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../services/product';
-import { Clock, Tag, Calendar, User, Gavel } from 'lucide-react';
+import { Clock, Tag, Calendar, User, Gavel, Heart } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 
 interface ProductCardProps {
     product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+    const { favorites, toggleFavorite, isAuthenticated } = useAuth();
+    const isFavorite = favorites.includes(product.id);
+
     // Treat as UTC
     const dateStr = product.endAt.endsWith('Z') ? product.endAt : `${product.endAt}Z`;
     const timeLeft = new Date(dateStr).getTime() - new Date().getTime();
@@ -29,6 +34,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
+    const handleToggleFavorite = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isAuthenticated) {
+            toast.info('Login to add to favorites');
+            return;
+        }
+        try {
+            await toggleFavorite(product.id);
+            toast.success(isFavorite ? 'Removed from Watchlist' : 'Added to Watchlist');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || `Error: ${err.response?.status}` || 'Action failed');
+        }
+    };
+
     // Image source priority: thumbnailUrl -> imageUrls[0] -> placeholder
     // @ts-ignore
     const displayImage = product.thumbnailUrl || (product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : 'https://placehold.co/400x400?text=No+Image');
@@ -48,13 +68,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                             }
                         }}
                     />
+                    
+                    {/* Watchlist Button */}
+                    <button
+                        onClick={handleToggleFavorite}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all outline-none z-20"
+                        title={isFavorite ? "Remove from Watchlist" : "Add to Watchlist"}
+                    >
+                        <Heart 
+                            className={`w-4 h-4 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
+                        />
+                    </button>
+
                     {isExpired && (
                         <div className="absolute inset-0 bg-[#E0E5EC]/80 backdrop-blur-sm flex items-center justify-center">
                             <span className="text-[#3D4852] font-extrabold text-lg tracking-wider">ENDED</span>
                         </div>
                     )}
                     {!isExpired && product.buyNowPrice && (
-                        <div className="absolute top-2 right-2 bg-green-500/90 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm">
+                        <div className="absolute top-2 left-2 bg-green-500/90 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm">
                             Buy Now
                         </div>
                     )}
@@ -115,7 +147,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                     <Link 
                         to={`/products/${product.id}`}
-                        className="neu-btn neu-btn-primary w-full py-3 rounded-xl text-sm font-bold tracking-wide mt-3"
+                        className="neu-btn neu-btn-primary w-full py-3 rounded-xl text-sm font-bold tracking-wide mt-3 text-center"
                     >
                         Place Bid
                     </Link>

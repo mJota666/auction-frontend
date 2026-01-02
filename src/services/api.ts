@@ -22,12 +22,50 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        if (error.response && error.response.status === 401) {
-            // Handle unauthorized access (e.g., redirect to login or clear token)
-            // localStorage.removeItem('token');
-            // window.location.href = '/login';
+    async (error) => {
+        const originalRequest = error.config;
+
+        // If error is 401 and we haven't retried yet
+        if (error.response && error.response.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (!refreshToken) {
+                    throw new Error('No refresh token available');
+                }
+
+                // Call refresh token API
+                // We use a fresh axios call to avoid interceptor loops or issues
+                const response = await axios.post('/api/v1/auth/refresh-token', {
+                    refreshToken: refreshToken
+                });
+
+                const { token, refreshToken: newRefreshToken } = response.data.data;
+
+                // Update storage
+                localStorage.setItem('token', token);
+                if (newRefreshToken) {
+                    localStorage.setItem('refreshToken', newRefreshToken);
+                }
+
+                // Update defaults and original request
+                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                originalRequest.headers['Authorization'] = `Bearer ${token}`;
+
+                // Retry original request
+                return api(originalRequest);
+
+            } catch (refreshError) {
+                // Refresh failed - Logout user
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return Promise.reject(refreshError);
+            }
         }
+
         return Promise.reject(error);
     }
 );

@@ -38,6 +38,7 @@ const Login: React.FC = () => {
       // Force cast to any to handle flexible backend response structures without TS errors
       const responseData: any = response.data || response;
       const token = responseData.token;
+      const refreshToken = responseData.refreshToken || '';
 
       if (token) {
           // Extract User
@@ -67,7 +68,7 @@ const Login: React.FC = () => {
           }
           
           console.log('Final Login User:', user);
-          login(token, user);
+          login(token, refreshToken, user);
           toast.success('Login successful!');
           navigate('/');
 

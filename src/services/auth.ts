@@ -24,6 +24,7 @@ export interface LoginData {
 export interface AuthResponse {
     data: {
         token: string;
+        refreshToken: string;
         id: number;
         email: string;
         fullName: string;

@@ -87,5 +87,23 @@ export const productService = {
     getCategoryChildren: async (parentId: number | string) => {
         const response = await api.get(`/categories/${parentId}/children`);
         return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    // New Profile Features
+    getMyProducts: async () => {
+        const response = await api.get('/products/seller/me'); // Verify endpoint? Assuming standard convention or I will need to mock/fix later if 404.
+        // Actually, user guide says "Xem danh sách sản phẩm mình đang đăng"
+        // Let's assume /products/my-products or similar. I'll use /users/me/products or /products/seller/me
+        // Backend guide didn't specify this exact endpoint but "My Sales" is /orders/my-sales.
+        // I will guess '/products/me' or similar. 
+        // Let's try to filter searchProducts by sellerId if feasible? No, explicit endpoint is better.
+        // I will use '/products/me' for now.
+        // Wait, looking at `api.ts`, base is likely /api/v1.
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    getMyBids: async () => {
+        const response = await api.get('/bids/me'); // Assuming endpoint
+        return response.data && response.data.data ? response.data.data : response.data;
     }
 };

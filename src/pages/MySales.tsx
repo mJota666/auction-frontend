@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { orderService, type Order, OrderStatus } from '../services/order';
 import { toast } from 'react-toastify';
-import { Truck, Check } from 'lucide-react';
+import { Truck, Check, Star, XCircle } from 'lucide-react';
+import RatingModal from '../components/RatingModal';
 
 const MySales: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [ratingData, setRatingData] = useState<{ isOpen: boolean; targetUserId: number; targetUserName: string; orderId: number; isCancellation?: boolean } | null>(null);
 
     useEffect(() => {
         fetchSales();
@@ -48,53 +50,101 @@ const MySales: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">My Sales</h1>
             
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                    {orders.length > 0 ? (
-                        orders.map((order) => (
-                            <li key={order.id}>
-                                <div className="px-4 py-4 sm:px-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            <div className="ml-4">
-                                                <p className="text-lg font-medium text-indigo-600">{order.productTitle}</p>
-                                                <p className="text-sm text-gray-500">Buyer ID: {order.buyerId}</p>
-                                            </div>
-                                        </div>
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                                            {order.status}
-                                        </span>
+            <div className="space-y-6">
+                {orders.length > 0 ? (
+                    orders.map((order) => (
+                        <div key={order.id} className="neu-extruded rounded-2xl p-6 transition-all hover:scale-[1.01] duration-300">
+                            <div className="flex flex-col md:flex-row justify-between gap-6">
+                                <div className="flex items-center gap-4">
+                                     <div className="w-16 h-16 rounded-xl neu-inset flex items-center justify-center text-[#6C63FF] font-bold text-xl">
+                                        #{order.id}
                                     </div>
-                                    <div className="mt-4 flex justify-end space-x-2">
+                                    <div>
+                                        <p className="text-lg font-bold text-[#3D4852]">{order.productTitle}</p>
+                                        <p className="text-sm text-gray-500">Buyer ID: <span className="font-semibold text-[#6C63FF]">{order.buyerId}</span></p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-3">
+                                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusColor(order.status)}`}>
+                                        {order.status}
+                                    </span>
+
+                                    <div className="flex gap-2 mt-2">
                                         {/* Actions based on status */}
                                         {order.status === OrderStatus.PENDING_PAYMENT && (
-                                            <span className="text-sm text-gray-500 italic">Waiting for payment</span>
+                                            <span className="text-sm text-gray-500 italic flex items-center bg-gray-100 px-3 py-1 rounded-full">
+                                                Waiting for payment
+                                            </span>
                                         )}
                                         {order.status === OrderStatus.PREPARING && (
                                             <button 
                                                 onClick={() => updateStatus(order.id, OrderStatus.DELIVERING)}
-                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                                                className="neu-btn px-4 py-2 rounded-xl text-white bg-[#6C63FF] text-xs font-bold flex items-center hover:bg-[#5a52d5]"
                                             >
-                                                <Truck className="w-3 h-3 mr-1" /> Start Delivery
+                                                <Truck className="w-3 h-3 mr-1.5" /> Start Delivery
                                             </button>
                                         )}
                                         {order.status === OrderStatus.DELIVERING && (
                                              <button 
                                                 onClick={() => updateStatus(order.id, OrderStatus.COMPLETED)}
-                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                                                className="neu-btn px-4 py-2 rounded-xl text-white bg-green-500 text-xs font-bold flex items-center hover:bg-green-600"
                                             >
-                                                <Check className="w-3 h-3 mr-1" /> Mark Delivered
+                                                <Check className="w-3 h-3 mr-1.5" /> Mark Delivered
+                                            </button>
+                                        )}
+                                        {order.status === OrderStatus.COMPLETED && (
+                                            <button 
+                                                onClick={() => setRatingData({
+                                                    isOpen: true,
+                                                    targetUserId: order.buyerId || 0,
+                                                    targetUserName: 'Buyer',
+                                                    orderId: order.id
+                                                })}
+                                                className="neu-btn px-4 py-2 rounded-xl text-yellow-600 text-xs font-bold flex items-center"
+                                            >
+                                                <Star className="w-3 h-3 mr-1.5" /> Rate Buyer
+                                            </button>
+                                        )}
+                                        {(order.status === OrderStatus.PENDING_PAYMENT || order.status === OrderStatus.PREPARING) && (
+                                            <button 
+                                                onClick={() => setRatingData({
+                                                    isOpen: true,
+                                                    targetUserId: order.buyerId || 0,
+                                                    targetUserName: 'Buyer',
+                                                    orderId: order.id,
+                                                    isCancellation: true
+                                                })}
+                                                className="neu-btn px-4 py-2 rounded-xl text-red-500 text-xs font-bold flex items-center hover:text-red-700"
+                                            >
+                                                <XCircle className="w-3 h-3 mr-1.5" /> Cancel
                                             </button>
                                         )}
                                     </div>
                                 </div>
-                            </li>
-                        ))
-                    ) : (
-                        <li className="px-4 py-8 text-center text-gray-500">No sales yet.</li>
-                    )}
-                </ul>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="neu-inset rounded-2xl p-12 text-center text-gray-400 font-medium">
+                        No sales found.
+                    </div>
+                )}
             </div>
+
+            {ratingData && (
+                <RatingModal
+                    isOpen={ratingData.isOpen}
+                    onClose={() => setRatingData(null)}
+                    targetUserId={ratingData.targetUserId}
+                    targetUserName={ratingData.targetUserName}
+                    orderId={ratingData.orderId}
+                    isCancellation={ratingData.isCancellation}
+                    onSuccess={() => {
+                        fetchSales(); // Refresh list to see updated status
+                        setRatingData(null);
+                    }}
+                />
+            )}
         </div>
     );
 };

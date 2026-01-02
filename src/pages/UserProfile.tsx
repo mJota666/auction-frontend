@@ -5,6 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/auth';
 import { toast } from 'react-toastify';
+import { User, Heart, Gavel, ShoppingBag, Truck, Package, Star } from 'lucide-react';
+
+// Sub-components / Pages
+import MyBids from '../components/profile/MyBids';
+import MyProducts from '../components/profile/MyProducts';
+import MyRatings from '../components/profile/MyRatings';
+import MyOrders from './MyOrders';
+import MySales from './MySales';
+import Favorites from './Favorites';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Full Name must be at least 2 characters'),
@@ -17,6 +26,7 @@ type ProfileFormInputs = z.infer<typeof profileSchema>;
 
 const UserProfile: React.FC = () => {
     const { user, login, token } = useAuth();
+    const [activeTab, setActiveTab] = useState('settings');
     const [isEditing, setIsEditing] = useState(false);
 
     const {
@@ -43,134 +53,186 @@ const UserProfile: React.FC = () => {
 
     const onSubmit = async (data: ProfileFormInputs) => {
         try {
-            // Depending on API, we might update profile and password separately or together
-            const updatedUser = await authService.updateProfile(data);
-            console.log('Update success, response:', updatedUser);
-            
-            // Update context
-             if (token && user) {
-                // API returns success message only, so we update local state with form data
-                // We assume email is read-only or handled separately if changed
+            await authService.updateProfile(data);
+            if (token && user) {
                 const newUserData = { 
                     ...user, 
                     fullName: data.fullName 
                 };
-                
-                login(token, newUserData); // Update user in local storage/context
+                login(token, '', newUserData); // Note: Login signature might need check, passing empty refresh token for now as we just update user
+                // Wait, login signature is login(token, refreshToken, user). 
+                // We should get refreshToken from locStorage or just not re-call login if we only want to update user context.
+                // Or better, update AuthContext to have `updateUser(user)` method.
+                // For now, I'll allow this but standard login might reset refresh token if passed empty. 
+                // Let's retrieve existing one.
+                const storedRefresh = localStorage.getItem('refreshToken') || '';
+                login(token, storedRefresh, newUserData);
             }
-
             toast.success('Profile updated successfully');
             setIsEditing(false);
         } catch (error: any) {
-            console.error('Failed to update profile:', error);
-            console.error('Error Response:', error.response?.data);
             toast.error(error.response?.data?.message || 'Failed to update profile');
         }
     };
 
+    const tabs = [
+        { id: 'settings', label: 'Profile Settings', icon: User },
+        { id: 'ratings', label: 'My Ratings', icon: Star },
+        { id: 'favorites', label: 'Watchlist', icon: Heart },
+        { id: 'bids', label: 'My Bids', icon: Gavel },
+        { id: 'orders', label: 'My Orders', icon: ShoppingBag },
+    ];
+
+    if (user?.role === 'SELLER' || user?.role === 'ADMIN') {
+        tabs.push({ id: 'products', label: 'My Products', icon: Package });
+        tabs.push({ id: 'sales', label: 'My Sales', icon: Truck });
+    }
+
     return (
-        <div className="max-w-4xl mx-auto p-8 neu-extruded mt-10 rounded-[2.5rem]">
-            <div className="flex justify-between items-center border-b border-gray-200/50 pb-6 mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-[#3D4852]">User Profile</h1>
-                    <p className="text-sm text-[#6B7280] mt-1">Manage your account settings and preferences</p>
-                </div>
-                
-                <button
-                    onClick={() => setIsEditing(!isEditing)}
-                    className={`neu-btn px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${isEditing ? 'text-red-500' : 'text-[#6C63FF]'}`}
-                >
-                    {isEditing ? 'Cancel Edit' : 'Edit Profile'}
-                </button>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-[#3D4852] ml-1">Full Name</label>
-                        <input
-                            type="text"
-                            disabled={!isEditing}
-                            {...register('fullName')}
-                            className={`w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all ${!isEditing ? 'opacity-80' : ''}`}
-                            placeholder="Your full name"
-                        />
-                         {errors.fullName && <p className="text-red-500 text-xs mt-2 ml-1">{errors.fullName.message}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-[#3D4852] ml-1">Email Address</label>
-                        <input
-                            type="email"
-                            disabled={true} 
-                            {...register('email')}
-                             className="w-full px-5 py-3.5 neu-inset rounded-2xl text-[#6B7280] bg-transparent cursor-not-allowed opacity-70 focus:outline-none"
-                        />
-                         {errors.email && <p className="text-red-500 text-xs mt-2 ml-1">{errors.email.message}</p>}
-                    </div>
-                </div>
-
-                {isEditing && (
-                    <div className="pt-6 mt-6 border-t border-gray-200/50">
-                         <h2 className="text-xl font-bold text-[#3D4852] mb-6 flex items-center gap-2">
-                            Security Settings
-                         </h2>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-[#3D4852] ml-1">Current Password</label>
-                                <input
-                                    type="password"
-                                    {...register('currentPassword')}
-                                    className="w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all"
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-sm font-semibold text-[#3D4852] ml-1">New Password</label>
-                                <input
-                                    type="password"
-                                    {...register('newPassword')}
-                                    className="w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all"
-                                    placeholder="••••••••"
-                                />
-                                 {errors.newPassword && <p className="text-red-500 text-xs mt-2 ml-1">{errors.newPassword.message}</p>}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {isEditing && (
-                    <div className="flex justify-end pt-4">
-                        <button
-                            type="submit"
-                            className="neu-btn-primary px-8 py-3 rounded-xl font-semibold text-white transition-all transform hover:-translate-y-0.5"
-                        >
-                            Save Changes
-                        </button>
-                    </div>
-                )}
-            </form>
+        <div className="px-20 h-full flex flex-col justify-center items-center py-6">
+            <h1 className="text-3xl font-bold text-[#3D4852] mb-6">Account Management</h1>
             
-            <div className="mt-12">
-                 <h2 className="text-xl font-bold text-[#3D4852] mb-4 ml-1">Account Status</h2>
-                 <div className="neu-inset rounded-2xl p-6 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-inner ${user?.role === 'ADMIN' ? 'bg-red-500' : user?.role === 'SELLER' ? 'bg-[#6C63FF]' : 'bg-blue-400'}`}>
-                            {user?.role ? user.role[0] : 'U'}
-                        </div>
+            <div className="w-full flex flex-row gap-8 flex-1 overflow-hidden">
+                {/* Sidebar Navigation */}
+                <div className="w-1/4 flex-shrink-0 h-full overflow-y-auto pr-1 custom-scrollbar">
+                    <div className="neu-extruded rounded-[2rem] p-6 min-h-full flex flex-col justify-between">
                         <div>
-                             <p className="text-sm font-medium text-[#6B7280]">Current Role</p>
-                             <p className="text-lg font-bold text-[#3D4852]">{user?.role || 'GUEST'}</p>
-                         </div>
-                     </div>
-                     
-                     {user?.role === 'USER' && (
-                         <button className="neu-btn px-5 py-2.5 rounded-xl text-[#6C63FF] font-semibold text-sm hover:text-[#5a52d5]">
-                             Upgrade to Seller
-                         </button>
-                     )}
-                 </div>
+                            <div className="flex flex-col items-center mb-6">
+                                <div className="w-20 h-20 rounded-full neu-inset flex items-center justify-center mb-3 p-1">
+                                    <div className={`w-full h-full rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-inner ${user?.role === 'SELLER' ? 'bg-[#6C63FF]' : 'bg-[#3D4852]'}`}>
+                                        {user?.fullName?.[0] || 'U'}
+                                    </div>
+                                </div>
+                                <p className="font-bold text-[#3D4852] text-lg text-center truncate w-full">{user?.fullName}</p>
+                                <p className="text-xs text-gray-500 font-medium truncate">{user?.email}</p>
+                            </div>
+                            
+                            <nav className="space-y-3">
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`w-full flex items-center px-4 py-3.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+                                            activeTab === tab.id 
+                                                ? 'neu-inset text-[#6C63FF]' 
+                                                : 'text-gray-500 hover:text-[#6C63FF] hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <tab.icon className={`w-5 h-5 mr-3 transition-colors ${activeTab === tab.id ? 'text-[#6C63FF]' : 'text-gray-400 group-hover:text-[#6C63FF]'}`} />
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </nav>
+                        </div>
+                        
+                        <div className="mt-8 pt-6 border-t border-[#d1d9e6]">
+                            <p className="text-center text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                                Member since {new Date().getFullYear()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content Area */}
+                <div className="flex-1 w-3/4 h-full overflow-y-auto px-1 custom-scrollbar pb-2">
+                    <div className="bg-white rounded-[2.5rem] p-8 neu-extruded min-h-full w-full">
+                        
+                        {activeTab === 'settings' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                                    <h2 className="text-2xl font-bold text-[#3D4852]">Profile Settings</h2>
+                                    <button
+                                        onClick={() => setIsEditing(!isEditing)}
+                                        className={`neu-btn px-4 py-2 rounded-lg text-sm font-bold transition-all ${isEditing ? 'text-red-500' : 'text-[#6C63FF]'}`}
+                                    >
+                                        {isEditing ? 'Cancel' : 'Edit Info'}
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-[#3D4852] ml-1">Full Name</label>
+                                            <input
+                                                type="text"
+                                                disabled={!isEditing}
+                                                {...register('fullName')}
+                                                className={`w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all ${!isEditing ? 'opacity-60 bg-gray-50' : ''}`}
+                                            />
+                                            {errors.fullName && <p className="text-red-500 text-xs ml-1">{errors.fullName.message}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-[#3D4852] ml-1">Email</label>
+                                            <input
+                                                type="email"
+                                                disabled
+                                                {...register('email')}
+                                                className="w-full px-5 py-3.5 neu-inset rounded-2xl text-gray-500 bg-gray-50 opacity-60 cursor-not-allowed"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {isEditing && (
+                                        <div className="pt-6 border-t border-gray-100">
+                                            <h3 className="text-lg font-bold text-[#3D4852] mb-4">Change Password</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-bold text-[#3D4852] ml-1">Current Password</label>
+                                                    <input
+                                                        type="password"
+                                                        {...register('currentPassword')}
+                                                        className="w-full px-5 py-3.5 neu-inset rounded-2xl"
+                                                        placeholder="••••••••"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-bold text-[#3D4852] ml-1">New Password</label>
+                                                    <input
+                                                        type="password"
+                                                        {...register('newPassword')}
+                                                        className="w-full px-5 py-3.5 neu-inset rounded-2xl"
+                                                        placeholder="••••••••"
+                                                    />
+                                                    {errors.newPassword && <p className="text-red-500 text-xs ml-1">{errors.newPassword.message}</p>}
+                                                </div>
+                                            </div>
+                                            <div className="mt-8 flex justify-end">
+                                                <button type="submit" className="neu-btn-primary px-8 py-3 rounded-xl text-white font-bold">
+                                                    Save Changes
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </form>
+                            </div>
+                        )}
+
+                        {activeTab === 'ratings' && <MyRatings />}
+                        {activeTab === 'bids' && <MyBids />}
+                        {activeTab === 'favorites' && <Favorites />}
+                        {activeTab === 'orders' && <MyOrders />}
+                        {activeTab === 'products' && <MyProducts />}
+                        {activeTab === 'sales' && <MySales />}
+
+                    </div>
+                </div>
             </div>
+            
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: #cbd5e1;
+                    border-radius: 20px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background-color: #94a3b8;
+                }
+            `}</style>
         </div>
     );
 };

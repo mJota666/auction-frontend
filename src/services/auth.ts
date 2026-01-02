@@ -96,5 +96,24 @@ export const authService = {
         // Backend uses same Toggle logic
         const response = await api.post(`/users/favorites/${productId}`);
         return response.data;
+    },
+
+    // Rating Features
+    getRatings: async (userId?: number) => {
+        // If userId is provided, get that user's ratings. Else get own.
+        const url = userId ? `/users/${userId}/ratings` : '/users/me/ratings';
+        const response = await api.get(url);
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    rateUser: async (targetUserId: number, score: number, comment: string, orderId?: number) => {
+        // POST /ratings
+        const response = await api.post('/ratings', {
+            targetUserId,
+            score, // 1 or -1
+            comment,
+            orderId
+        });
+        return response.data;
     }
 };

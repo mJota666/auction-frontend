@@ -40,8 +40,16 @@ const App: React.FC = () => {
           <Route path="/register" element={<Register />} />
 
           {/* Protected/Inner Routes (With MainLayout) */}
+          <Route path="/profile" element={
+            <div className="h-screen flex flex-col bg-[#F3F4F8] overflow-hidden">
+                <Navbar />
+                <div className="flex-1 flex flex-col pt-20 overflow-hidden w-full">
+                    <UserProfile />
+                </div>
+            </div>
+          } />
+
           <Route element={<MainLayout />}>
-            <Route path="/profile" element={<UserProfile />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/create-auction" element={<CreateAuction />} />
             <Route path="/favorites" element={<Favorites />} />

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { orderService, type Order, OrderStatus } from '../services/order'; // Fixed import to use types
 import { Link } from 'react-router-dom';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, Star } from 'lucide-react';
+import RatingModal from '../components/RatingModal';
 
 const MyOrders: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [ratingData, setRatingData] = useState<{ isOpen: boolean; targetUserId: number; targetUserName: string; orderId: number } | null>(null);
 
     useEffect(() => {
         fetchOrders();
@@ -39,55 +41,81 @@ const MyOrders: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">My Orders</h1>
             
-            <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                    {orders.length > 0 ? (
-                        orders.map((order) => (
-                            <li key={order.id}>
-                                <div className="px-4 py-4 sm:px-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            <div className="flex-shrink-0 h-16 w-16">
-                                                <img 
-                                                    className="h-16 w-16 rounded-md object-cover" 
-                                                    src={order.productImage || 'https://placehold.co/100x100?text=No+Image'} 
-                                                    alt={order.productTitle} 
-                                                />
-                                            </div>
-                                            <div className="ml-4">
-                                                <p className="text-lg font-medium text-indigo-600 truncate">{order.productTitle}</p>
-                                                <p className="text-sm text-gray-500">Order #{order.id}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                                                {order.status}
-                                            </span>
-                                            <p className="mt-1 text-sm text-gray-900 font-bold">
-                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)}
-                                            </p>
-                                        </div>
+            <div className="space-y-6">
+                {orders.length > 0 ? (
+                    orders.map((order) => (
+                        <div key={order.id} className="neu-extruded rounded-2xl p-6 transition-all hover:scale-[1.01] duration-300">
+                            <div className="flex flex-col md:flex-row justify-between gap-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-24 h-24 rounded-xl neu-inset p-2 flex-shrink-0">
+                                        <img 
+                                            className="w-full h-full object-cover rounded-lg" 
+                                            src={order.productImage || 'https://placehold.co/100x100?text=No+Image'} 
+                                            alt={order.productTitle} 
+                                        />
                                     </div>
-                                    <div className="mt-4 flex justify-end">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-[#3D4852] truncate max-w-xs">{order.productTitle}</h3>
+                                        <p className="text-sm text-gray-500 mt-1">Order #{order.id}</p>
+                                        <p className="text-xl font-bold text-[#6C63FF] mt-2">
+                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.amount)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-3">
+                                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusColor(order.status)}`}>
+                                        {order.status}
+                                    </span>
+                                    
+                                    <div className="flex gap-3 mt-auto">
                                         {order.status === OrderStatus.PENDING_PAYMENT && (
-                                            <Link to={`/checkout/${order.id}`} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                                            <Link to={`/checkout/${order.id}`} className="neu-btn px-6 py-2 rounded-xl text-white bg-[#6C63FF] font-bold text-sm flex items-center">
                                                 <CreditCard className="w-4 h-4 mr-2" /> Pay Now
                                             </Link>
                                         )}
                                         {order.status === OrderStatus.DELIVERING && (
-                                            <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                            <button className="neu-btn px-6 py-2 rounded-xl text-[#3D4852] font-bold text-sm">
                                                 Track Order
+                                            </button>
+                                        )}
+                                        {order.status === OrderStatus.COMPLETED && (
+                                            <button 
+                                                onClick={() => setRatingData({
+                                                    isOpen: true,
+                                                    targetUserId: order.sellerId || 0,
+                                                    targetUserName: 'Seller',
+                                                    orderId: order.id
+                                                })}
+                                                className="neu-btn px-6 py-2 rounded-xl text-yellow-600 font-bold text-sm flex items-center"
+                                            >
+                                                <Star className="w-4 h-4 mr-2" /> Rate Seller
                                             </button>
                                         )}
                                     </div>
                                 </div>
-                            </li>
-                        ))
-                    ) : (
-                        <li className="px-4 py-8 text-center text-gray-500">No orders found.</li>
-                    )}
-                </ul>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="neu-inset rounded-2xl p-12 text-center text-gray-400 font-medium">
+                        No orders found.
+                    </div>
+                )}
             </div>
+
+            {ratingData && (
+                <RatingModal
+                    isOpen={ratingData.isOpen}
+                    onClose={() => setRatingData(null)}
+                    targetUserId={ratingData.targetUserId}
+                    targetUserName={ratingData.targetUserName}
+                    orderId={ratingData.orderId}
+                    onSuccess={() => {
+                        // Optionally refresh orders or just close
+                        setRatingData(null);
+                    }}
+                />
+            )}
         </div>
     );
 };

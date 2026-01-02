@@ -19,6 +19,9 @@ const ProductDetail: React.FC = () => {
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const [questionText, setQuestionText] = useState('');
     const [submittingQuestion, setSubmittingQuestion] = useState(false);
+    
+    // Bidding State
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -160,9 +163,35 @@ const ProductDetail: React.FC = () => {
         }
     };
 
+    // Bidding Checks
+    const getBidStatus = () => {
+        if (!user) return { allowed: false, reason: 'Please login to bid.' };
+        
+        const pos = user.ratingPositive || 0;
+        const neg = user.ratingNegative || 0;
+        const totalRating = pos + neg;
+
+        // Rule 1: Rating < 80%
+        if (totalRating > 0) {
+            const ratingRatio = pos / totalRating;
+            if (ratingRatio < 0.8) {
+                return { allowed: false, reason: 'Your rating is too low (< 80%) to participate.' };
+            }
+        } else {
+             // Rule 2: Unrated Bidder
+             if (product && product.allowUnratedBidder === false) {
+                 return { allowed: false, reason: 'This seller does not allow unrated accounts.' };
+             }
+        }
+        
+        return { allowed: true, reason: '' };
+    };
+
+    const bidStatus = getBidStatus();
+
     const handlePlaceBid = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isAuthenticated) {
+        if (!isAuthenticated || !user) {
             toast.info('Please login to place a bid');
             navigate('/login');
             return;
@@ -170,11 +199,27 @@ const ProductDetail: React.FC = () => {
         
         if (!product || !id) return;
         
-        const currentPrice = product.currentPrice || product.startPrice;
-        if (bidAmount <= currentPrice) {
-            toast.error(`Bid must be higher than current price: ${currentPrice}`);
+        if (!bidStatus.allowed) {
+            toast.error(bidStatus.reason);
             return;
         }
+
+        const currentPrice = product.currentPrice || product.startPrice;
+        const minBid = currentPrice + (product.stepPrice || 0);
+
+        // Rule 3: Valid Price Check
+        if (bidAmount < minBid) {
+            toast.error(`Bid must be at least ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(minBid)}`);
+            return;
+        }
+
+        // Show Confirmation
+        setShowConfirmModal(true);
+    };
+
+    const confirmBid = async () => {
+        setShowConfirmModal(false);
+        if (!id) return;
 
         try {
             await productService.placeBid(Number(id), bidAmount);
@@ -347,20 +392,26 @@ const ProductDetail: React.FC = () => {
                                             type="text"
                                             name="bidAmount"
                                             id="bidAmount"
-                                            className="block w-full pl-8 pr-4 py-4 neu-inset-deep rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF] transition-all text-2xl tracking-wider"
+                                            disabled={!bidStatus.allowed}
+                                            className={`block w-full pl-8 pr-4 py-4 neu-inset-deep rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF] transition-all text-2xl tracking-wider ${!bidStatus.allowed ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                                             placeholder="0"
                                             value={new Intl.NumberFormat('vi-VN').format(bidAmount)}
                                             onChange={(e) => {
-                                                // Remove non-digit characters
                                                 const rawValue = e.target.value.replace(/\D/g, '');
                                                 setBidAmount(Number(rawValue));
                                             }}
                                         />
                                     </div>
+                                    {!bidStatus.allowed && (
+                                        <p className="text-red-500 text-sm font-semibold flex items-center mt-2">
+                                            <span className="mr-1">⚠</span> {bidStatus.reason}
+                                        </p>
+                                    )}
                                 </div>
                                 <button
                                     type="submit"
-                                    className="w-full neu-btn neu-btn-primary py-4 rounded-xl text-lg font-bold tracking-wide uppercase shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
+                                    disabled={!bidStatus.allowed}
+                                    className={`w-full neu-btn neu-btn-primary py-4 rounded-xl text-lg font-bold tracking-wide uppercase shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all ${!bidStatus.allowed ? 'opacity-50 cursor-not-allowed hover:none hover:translate-y-0 filter grayscale' : ''}`}
                                 >
                                     Place Bid
                                 </button>
@@ -523,6 +574,31 @@ const ProductDetail: React.FC = () => {
                     </ul>
                 </div>
             </div>
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 neu-extruded animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-xl font-extrabold text-[#3D4852] mb-4">Confirm Your Bid</h3>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to place a bid of <span className="font-bold text-[#6C63FF] text-lg">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bidAmount)}</span> for <span className="font-semibold">{product?.title}</span>?
+                        </p>
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={confirmBid}
+                                className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-[#6C63FF] hover:bg-[#5a52d5] shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
+                            >
+                                Confirm Bid
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -101,17 +101,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </Link>
                 
                 {/* Price Section */}
-                <div className="mt-3 flex items-end justify-between">
+                {/* Price Section */}
+                <div className="mt-3 flex flex-wrap items-end justify-between gap-x-1">
                      <div className="flex flex-col">
                          <span className="text-xs font-medium text-[#6B7280] uppercase tracking-wide">Current Price</span>
-                         <span className="text-xl font-extrabold text-[#6C63FF]">
+                         <span className="text-xl font-extrabold text-[#6C63FF] whitespace-nowrap">
                              {formatCurrency(product.currentPrice || product.startPrice)}
                          </span>
                      </div>
                      {product.buyNowPrice && (
-                         <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-medium text-[#6B7280]">Buy Now</span>
-                            <span className="text-sm font-bold text-green-600">
+                         <div className="flex flex-col items-start">
+                            <span className="text-[10px] font-medium text-[#6B7280] whitespace-nowrap">Buy Now</span>
+                            <span className="text-sm font-bold text-green-600 whitespace-nowrap">
                                 {formatCurrency(product.buyNowPrice)}
                             </span>
                          </div>

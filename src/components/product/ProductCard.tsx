@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Product } from '../../services/product';
-import { Clock, Tag, Calendar, User, Gavel, Heart } from 'lucide-react';
+import { Clock, Calendar, User, Gavel, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
 

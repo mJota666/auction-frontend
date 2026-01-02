@@ -1,13 +1,14 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productService, type Product, type Bid, type Question } from '../services/product';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Clock, User as UserIcon, Star, MessageCircle, Send } from 'lucide-react';
+import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart } from 'lucide-react'; // Added Heart
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, user, favorites, toggleFavorite } = useAuth(); // Added favorites, toggleFavorite
     const navigate = useNavigate();
     
     const [product, setProduct] = useState<Product | null>(null);
@@ -22,6 +23,27 @@ const ProductDetail: React.FC = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const isSeller = user && product && user.id === product.sellerId;
+    
+    // Check if favorite
+    const isFavorite = product ? favorites.includes(product.id) : false;
+
+    const handleToggleFavorite = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isAuthenticated) {
+            toast.info('Login to add to favorites');
+            navigate('/login');
+            return;
+        }
+        if (!product) return;
+        
+        try {
+            await toggleFavorite(product.id);
+            toast.success(isFavorite ? 'Removed from Watchlist' : 'Added to Watchlist');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Action failed');
+        }
+    };
 
     useEffect(() => {
         if (id) {
@@ -204,6 +226,17 @@ const ProductDetail: React.FC = () => {
                             alt={product.title} 
                             className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
                          />
+                         
+                         {/* Watchlist Button */}
+                         <button
+                            onClick={handleToggleFavorite}
+                            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all outline-none z-20"
+                            title={isFavorite ? "Remove from Watchlist" : "Add to Watchlist"}
+                         >
+                            <Heart 
+                                className={`w-5 h-5 transition-colors ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} 
+                            />
+                         </button>
                          
                          {/* Navigation Arrows */}
                          {product.imageUrls && product.imageUrls.length > 1 && (

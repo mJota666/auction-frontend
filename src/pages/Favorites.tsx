@@ -2,27 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { authService } from '../services/auth';
 import type { Product } from '../services/product';
 import ProductCard from '../components/product/ProductCard';
-import { Heart } from 'lucide-react';
+import { Heart, RefreshCw } from 'lucide-react'; // Added RefreshCw
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 const Favorites: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const { favorites } = useAuth(); // Get favorites IDs from context
+
+    const fetchFavorites = async () => {
+        setLoading(true);
+        try {
+            const data = await authService.getFavorites();
+            setProducts(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Failed to fetch favorites', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchFavorites = async () => {
-            try {
-                const data = await authService.getFavorites();
-                setProducts(Array.isArray(data) ? data : []);
-            } catch (error) {
-                console.error('Failed to fetch favorites', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchFavorites();
     }, []);
+
+    // Filter products to only show those that are still in the 'favorites' ID list
+    const displayedProducts = products.filter(p => favorites.includes(p.id));
 
     if (loading) return <div className="flex justify-center py-20">Loading...</div>;
 
@@ -40,9 +46,9 @@ const Favorites: React.FC = () => {
                 </div>
             </div>
 
-            {products.length > 0 ? (
+            {displayedProducts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {products.map((product) => (
+                    {displayedProducts.map((product) => (
                         <div key={product.id} className="h-full">
                             <ProductCard product={product} />
                         </div>
@@ -57,7 +63,7 @@ const Favorites: React.FC = () => {
                     <p className="text-[#6B7280] font-medium max-w-md mx-auto mb-8">
                         Tap the heart icon on any auction to save it here for quick access later.
                     </p>
-                    <Link to="/search" className="neu-btn neu-btn-primary px-8 py-3 rounded-xl font-bold tracking-wide">
+                    <Link to="/search" className="neu-btn neu-btn-primary px-8 mx-8 py-3 rounded-xl font-bold tracking-wide">
                         Explore Auctions
                     </Link>
                 </div>

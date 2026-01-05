@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { Truck, Check, Star, XCircle } from 'lucide-react';
 import RatingModal from '../components/RatingModal';
 
-const MySales: React.FC = () => {
+const MySales: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [ratingData, setRatingData] = useState<{ isOpen: boolean; targetUserId: number; targetUserName: string; orderId: number; isCancellation?: boolean } | null>(null);
@@ -62,8 +62,14 @@ const MySales: React.FC = () => {
     if (loading) return <div className="flex justify-center py-20">Loading...</div>;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">My Sales</h1>
+        <div className={isTab ? "h-full" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}>
+            {isTab ? (
+                <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                    <h2 className="text-2xl font-bold text-[#3D4852]">My Sales</h2>
+                </div>
+            ) : (
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Sales</h1>
+            )}
             
             <div className="space-y-6">
                 {orders.length > 0 ? (

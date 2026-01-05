@@ -272,10 +272,10 @@ const UserProfile: React.FC = () => {
 
                         {activeTab === 'ratings' && <MyRatings />}
                         {activeTab === 'bids' && <MyBids />}
-                        {activeTab === 'favorites' && <Favorites />}
-                        {activeTab === 'orders' && <MyOrders />}
+                        {activeTab === 'favorites' && <Favorites isTab={true} />}
+                        {activeTab === 'orders' && <MyOrders isTab={true} />}
                         {activeTab === 'products' && <MyProducts />}
-                        {activeTab === 'sales' && <MySales />}
+                        {activeTab === 'sales' && <MySales isTab={true} />}
 
                     </div>
                 </div>

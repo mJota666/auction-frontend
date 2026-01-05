@@ -39,18 +39,24 @@ const MyRatings: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
                 <h2 className="text-2xl font-bold text-[#3D4852]">My Ratings</h2>
-                <div className="flex items-center gap-6 neu-inset px-6 py-3 rounded-2xl bg-gray-50/50">
+            </div>
+
+            <div className="flex items-center justify-between gap-6 neu-inset px-8 py-6 rounded-2xl bg-gray-50/50 mb-8">
+                <div className="flex items-center gap-6">
                     <div className="text-center">
-                        <span className="block text-2xl font-black text-green-500">{percentage}%</span>
+                        <span className="block text-3xl font-black text-green-500">{percentage}%</span>
                         <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Positive</span>
                     </div>
-                    <div className="h-8 w-px bg-gray-200"></div>
-                    <div className="flex gap-6 text-sm font-bold">
-                        <span className="flex items-center text-green-600 gap-1.5"><ThumbsUp className="w-5 h-5"/> {positiveCount}</span>
-                        <span className="flex items-center text-red-500 gap-1.5"><ThumbsDown className="w-5 h-5"/> {negativeCount}</span>
+                    <div className="h-12 w-px bg-gray-200"></div>
+                    <div className="flex gap-8 text-base font-bold">
+                        <span className="flex items-center text-green-600 gap-2"><ThumbsUp className="w-6 h-6"/> {positiveCount}</span>
+                        <span className="flex items-center text-red-500 gap-2"><ThumbsDown className="w-6 h-6"/> {negativeCount}</span>
                     </div>
+                </div>
+                <div className="text-sm text-gray-400 font-medium italic">
+                    Total: {total} ratings
                 </div>
             </div>
 

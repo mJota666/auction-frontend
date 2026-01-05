@@ -35,7 +35,9 @@ const MyBids: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-[#3D4852]">My Active Bids</h2>
+            <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
+                <h2 className="text-2xl font-bold text-[#3D4852]">My Active Bids</h2>
+            </div>
             {bids.length === 0 ? (
                 <div className="neu-inset rounded-2xl p-12 text-center text-gray-400 font-medium">
                     You haven't placed any bids yet.

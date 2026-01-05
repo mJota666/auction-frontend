@@ -47,7 +47,9 @@ const Login: React.FC = () => {
                  id: responseData.id || 0,
                  email: responseData.email || data.email,
                  role: responseData.role || 'USER',
-                 fullName: responseData.fullName || responseData.fullname || responseData.name || 'User' 
+                 fullName: responseData.fullName || responseData.fullname || responseData.name || 'User',
+                 address: responseData.address,
+                 dob: responseData.dob || responseData.birthDate
              };
           }
 

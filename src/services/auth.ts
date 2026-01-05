@@ -7,6 +7,8 @@ export interface User {
     role: string;
     ratingPositive?: number;
     ratingNegative?: number;
+    address?: string;
+    dob?: string;
 }
 
 export interface RegisterData {

@@ -20,6 +20,7 @@ const profileSchema = z.object({
   email: z.string().email('Invalid email address'),
   address: z.string().optional(),
   dob: z.string().optional(), // YYYY-MM-DD
+  birthDate: z.string().optional(), // Back-compat
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6, 'Password must be at least 6 characters').optional(),
 });
@@ -41,8 +42,8 @@ const UserProfile: React.FC = () => {
         defaultValues: {
             fullName: user?.fullName || '',
             email: user?.email || '',
-            address: (user as any)?.address || '',
-            dob: (user as any)?.dob?.split('T')[0] || (user as any)?.birthDate?.split('T')[0] || '', // Handle various back-compat names
+            address: user?.address || '',
+            dob: user?.dob?.split('T')[0] || (user as any)?.birthDate?.split('T')[0] || '', // Handle various back-compat names
         }
     });
 
@@ -52,7 +53,7 @@ const UserProfile: React.FC = () => {
                 fullName: user.fullName || '',
                 email: user.email || '',
                 address: (user as any)?.address || '',
-                dob: (user as any)?.dob?.split('T')[0] || (user as any)?.birthDate?.split('T')[0] || '',
+                dob: user?.dob?.split('T')[0] || (user as any)?.birthDate?.split('T')[0] || '',
             });
         }
     }, [user, reset]);
@@ -171,9 +172,9 @@ const UserProfile: React.FC = () => {
                                             <label className="text-sm font-bold text-[#3D4852] ml-1">Email</label>
                                             <input
                                                 type="email"
-                                                disabled={!isEditing}
+                                                disabled={true}
                                                 {...register('email')}
-                                                className={`w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all ${!isEditing ? 'opacity-60 bg-gray-50' : ''}`}
+                                                className="w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] opacity-60 bg-gray-50 cursor-not-allowed"
                                             />
                                             {errors.email && <p className="text-red-500 text-xs ml-1">{errors.email.message}</p>}
                                         </div>

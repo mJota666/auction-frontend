@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, LogOut, PlusCircle, Heart } from 'lucide-react';
+import { User, LogOut, PlusCircle, Heart, LayoutDashboard } from 'lucide-react';
 
 
 const Navbar: React.FC = () => {
@@ -54,6 +54,11 @@ const Navbar: React.FC = () => {
              {(user?.role?.toUpperCase() === 'SELLER' || user?.role?.toUpperCase() === 'ADMIN') && (
                  <Link to="/create-auction" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Create Auction">
                     <PlusCircle size={20} />
+                 </Link>
+             )}
+             {user?.role?.toUpperCase() === 'ADMIN' && (
+                 <Link to="/admin" className="w-10 h-10 neu-btn hover:text-indigo-600" title="Admin Panel">
+                    <LayoutDashboard size={20} />
                  </Link>
              )}
              <Link to="/favorites" className="w-10 h-10 neu-btn hover:text-pink-500 text-pink-500/80" title="Watchlist">

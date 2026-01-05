@@ -15,7 +15,7 @@ export interface Product {
     sellerId?: number;
     sellerName?: string; // Add this
     buyNowPrice?: number;
-    autoExtend?: boolean;
+    autoExtendEnabled?: boolean;
     createdAt?: string;
     bidCount?: number; // Added based on BE feedback
     currentWinnerName?: string; // Added based on BE feedback
@@ -79,6 +79,11 @@ export const productService = {
         return response.data;
     },
 
+    answerQuestion: async (questionId: number, answer: string) => {
+        const response = await api.put(`/products/qa/${questionId}/answer`, { answer });
+        return response.data;
+    },
+
     getCategories: async () => {
         const response = await api.get('/categories'); // Changed from /admin/categories
         return response.data;
@@ -105,5 +110,16 @@ export const productService = {
     getMyBids: async () => {
         const response = await api.get('/bids/me'); // Assuming endpoint
         return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    appendDescription: async (productId: number | string, description: string) => {
+        const response = await api.put(`/products/${productId}/description`, { description });
+        return response.data;
+    },
+
+    denyBidder: async (productId: number | string, bidderId: number) => {
+        // Updated path based on backend requirements: /bids/{productId}/block/{userId}
+        const response = await api.post(`/bids/${productId}/block/${bidderId}`);
+        return response.data;
     }
 };

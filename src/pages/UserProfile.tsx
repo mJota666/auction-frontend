@@ -196,7 +196,23 @@ const UserProfile: React.FC = () => {
                                                     {errors.newPassword && <p className="text-red-500 text-xs ml-1">{errors.newPassword.message}</p>}
                                                 </div>
                                             </div>
-                                            <div className="mt-8 flex justify-end">
+                                            <div className="mt-8 flex justify-between items-center">
+                                                <button 
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await authService.requestSellerUpgrade();
+                                                            toast.success('Upgrade request sent successfully!');
+                                                        } catch (error) {
+                                                            toast.error('Failed to send upgrade request');
+                                                        }
+                                                    }}
+                                                    className="text-sm text-[#6C63FF] font-bold hover:underline"
+                                                    disabled={user?.role === 'SELLER'}
+                                                >
+                                                    {user?.role === 'SELLER' ? 'You are already a Seller' : 'Request Seller Upgrade'}
+                                                </button>
+
                                                 <button type="submit" className="neu-btn-primary px-8 py-3 rounded-xl text-white font-bold">
                                                     Save Changes
                                                 </button>

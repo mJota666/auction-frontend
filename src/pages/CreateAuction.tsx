@@ -27,7 +27,7 @@ const createAuctionSchema = z.object({
       })
   ).min(3, 'At least 3 additional images are required'),
   categoryId: z.coerce.number().min(1, 'Category is required'),
-  autoExtend: z.boolean().default(false)
+  autoExtendEnabled: z.boolean().default(false)
 }).refine((data) => {
     if (data.buyNowPrice && data.buyNowPrice <= data.startPrice) {
         return false;
@@ -55,7 +55,7 @@ const CreateAuction: React.FC = () => {
         buyNowPrice: undefined, // Explicitly undefined
         categoryId: 0,
         endAt: '', 
-        autoExtend: false
+        autoExtendEnabled: false
     }
   });
 
@@ -323,12 +323,12 @@ const CreateAuction: React.FC = () => {
             
             <div className="flex items-center pb-3">
                 <input
-                    id="autoExtend"
+                    id="autoExtendEnabled"
                     type="checkbox"
-                    {...register('autoExtend')}
+                    {...register('autoExtendEnabled')}
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
-                <label htmlFor="autoExtend" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="autoExtendEnabled" className="ml-2 block text-sm text-gray-900">
                     Auto-extend auction if bid placed in last 5 mins?
                 </label>
             </div>

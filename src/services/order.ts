@@ -49,6 +49,11 @@ export const orderService = {
         return response.data;
     },
 
+    cancelOrder: async (orderId: number) => {
+        const response = await api.post(`/orders/${orderId}/cancel`);
+        return response.data;
+    },
+
     submitRating: async (orderId: number, rating: number, comment: string) => {
         const response = await api.post('/ratings', { orderId, rating, comment });
         return response.data;

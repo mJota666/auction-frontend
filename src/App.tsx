@@ -21,6 +21,10 @@ import Checkout from './pages/Checkout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import CategoryManagement from './pages/admin/CategoryManagement';
+import { AdminProvider } from './context/AdminContext';
+import ProductManagement from './pages/admin/ProductManagement';
+
+// Main App Component
 
 const App: React.FC = () => {
   return (
@@ -58,9 +62,34 @@ const App: React.FC = () => {
             <Route path="/checkout/:id" element={<Checkout />} />
             
             {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/categories" element={<CategoryManagement />} />
+            <Route path="/admin" element={
+              <AdminProvider>
+                <div className="w-full h-full">
+                  <AdminDashboard />
+                </div>
+              </AdminProvider>
+            } />
+            <Route path="/admin/users" element={
+              <AdminProvider>
+                <div className="w-full h-full">
+                   <UserManagement />
+                </div>
+              </AdminProvider>
+            } />
+            <Route path="/admin/categories" element={
+              <AdminProvider>
+                <div className="w-full h-full">
+                  <CategoryManagement />
+                </div>
+              </AdminProvider>
+            } />
+            <Route path="/admin/products" element={
+              <AdminProvider>
+                <div className="w-full h-full">
+                  <ProductManagement />
+                </div>
+              </AdminProvider>
+            } />
           </Route>
         </Routes>
         <ToastContainer position="bottom-right" />

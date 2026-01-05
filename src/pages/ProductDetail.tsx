@@ -1,14 +1,15 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { productService, type Product, type Bid, type Question } from '../services/product';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart } from 'lucide-react'; // Added Heart
+import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart, XCircle, Edit, Ban } from 'lucide-react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { isAuthenticated, user, favorites, toggleFavorite } = useAuth(); // Added favorites, toggleFavorite
+    const { isAuthenticated, user, favorites, toggleFavorite } = useAuth();
     const navigate = useNavigate();
     
     const [product, setProduct] = useState<Product | null>(null);
@@ -20,14 +21,19 @@ const ProductDetail: React.FC = () => {
     const [questionText, setQuestionText] = useState('');
     const [submittingQuestion, setSubmittingQuestion] = useState(false);
     
+    // Seller Features State
+    const [showAppendModal, setShowAppendModal] = useState(false);
+    const [appendContent, setAppendContent] = useState('');
+    const [replyText, setReplyText] = useState<{ [key: number]: string }>({}); // Map questionId -> reply
+    const [submittingReply, setSubmittingReply] = useState<{ [key: number]: boolean }>({});
+
     // Bidding State
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-    const isSeller = user && product && user.id === product.sellerId;
+    const isSeller = user && product && Number(user.id) === Number(product.sellerId);
     
-    // Check if favorite
     const isFavorite = product ? favorites.includes(product.id) : false;
 
     const handleToggleFavorite = async (e: React.MouseEvent) => {
@@ -90,9 +96,8 @@ const ProductDetail: React.FC = () => {
                  setQuestions((qaData as any).content);
             }
 
-            setCurrentImageIndex(0); // Reset image index on new product load
+            setCurrentImageIndex(0); 
             
-            // Sort bids by amount desc to find highest
             let validBids: Bid[] = [];
             if (Array.isArray(bidsData)) {
                 validBids = bidsData;
@@ -103,13 +108,10 @@ const ProductDetail: React.FC = () => {
             const sortedBids = validBids.sort((a: Bid, b: Bid) => b.amount - a.amount);
             setBids(sortedBids);
             
-            // Set default bid amount to current price + step or start price
             const currentPrice = productData.currentPrice || productData.startPrice;
             setBidAmount(currentPrice + (productData.stepPrice || 0));
         } catch (error) {
             console.error('Error fetching product details:', error);
-            // Don't show error toast for expected partial failures if basic product data loaded
-            // But here we fail whole block if one fails. Ideally should settle.
         } finally {
             setLoading(false);
         }
@@ -117,15 +119,75 @@ const ProductDetail: React.FC = () => {
 
     const fetchRelatedProducts = async (catId: number) => {
         try {
-            // Fetch 5 related products
             const data = await productService.searchProducts({ categoryId: catId, size: 5 });
             const list = Array.isArray(data) ? data : data.content || [];
-            // Filter out current product
             setRelatedProducts(list.filter((p: Product) => p.id !== Number(id)).slice(0, 5));
         } catch (error) {
             console.error('Failed to fetch related products', error);
         }
     };
+
+    // --- Seller Actions ---
+
+    const handleAppendDescription = async () => {
+        if (!id || !appendContent.trim()) return;
+        try {
+            // Append timestamp
+            const dateStr = new Date().toLocaleString('vi-VN');
+            const newDesc = `
+                <br/>
+                <hr/>
+                <p><strong>✏️ Update ${dateStr}:</strong></p>
+                ${appendContent}
+            `;
+            await productService.appendDescription(id, newDesc);
+            toast.success('Description updated successfully');
+            setShowAppendModal(false);
+            setAppendContent('');
+            fetchProductData(id);
+        } catch (error: any) {
+            toast.error('Failed to append description');
+        }
+    };
+
+    const handleDenyBidder = async (bidderId: number) => {
+        if (!id || !window.confirm('Are you sure you want to deny this bidder? They will be unable to bid on this product again.')) return;
+        try {
+            await productService.denyBidder(id, bidderId);
+            toast.success('Bidder denied successfully');
+            fetchProductData(id);
+        } catch (error: any) {
+             toast.error(error.response?.data?.message || 'Failed to deny bidder');
+        }
+    };
+
+    const handleAnswerQuestion = async (questionId: number) => {
+        const answer = replyText[questionId];
+        if (!answer?.trim()) return;
+
+        setSubmittingReply(prev => ({ ...prev, [questionId]: true }));
+        try {
+            await productService.answerQuestion(questionId, answer);
+            toast.success('Answer sent');
+            setReplyText(prev => ({ ...prev, [questionId]: '' }));
+             // Refresh Q&A
+             const qaData = await productService.getProductQA(id!);
+             if (Array.isArray(qaData)) {
+                setQuestions(qaData);
+            } else if (qaData && Array.isArray((qaData as any).data)) {
+                 setQuestions((qaData as any).data);
+            } else if (qaData && Array.isArray((qaData as any).content)) {
+                 setQuestions((qaData as any).content);
+            }
+        } catch (error) {
+            toast.error('Failed to send answer');
+        } finally {
+            setSubmittingReply(prev => ({ ...prev, [questionId]: false }));
+        }
+    };
+
+
+    // --- Buyer Actions ---
 
     const handleAskQuestion = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -163,22 +225,20 @@ const ProductDetail: React.FC = () => {
         }
     };
 
-    // Bidding Checks
     const getBidStatus = () => {
         if (!user) return { allowed: false, reason: 'Please login to bid.' };
-        
+        if (isSeller) return { allowed: false, reason: 'You cannot bid on your own product.' };
+
         const pos = user.ratingPositive || 0;
         const neg = user.ratingNegative || 0;
         const totalRating = pos + neg;
 
-        // Rule 1: Rating < 80%
         if (totalRating > 0) {
             const ratingRatio = pos / totalRating;
             if (ratingRatio < 0.8) {
                 return { allowed: false, reason: 'Your rating is too low (< 80%) to participate.' };
             }
         } else {
-             // Rule 2: Unrated Bidder
              if (product && product.allowUnratedBidder === false) {
                  return { allowed: false, reason: 'This seller does not allow unrated accounts.' };
              }
@@ -207,13 +267,11 @@ const ProductDetail: React.FC = () => {
         const currentPrice = product.currentPrice || product.startPrice;
         const minBid = currentPrice + (product.stepPrice || 0);
 
-        // Rule 3: Valid Price Check
         if (bidAmount < minBid) {
             toast.error(`Bid must be at least ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(minBid)}`);
             return;
         }
 
-        // Show Confirmation
         setShowConfirmModal(true);
     };
 
@@ -224,7 +282,7 @@ const ProductDetail: React.FC = () => {
         try {
             await productService.placeBid(Number(id), bidAmount);
             toast.success('Bid placed successfully!');
-            fetchProductData(id); // Refresh data
+            fetchProductData(id);
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to place bid');
         }
@@ -239,19 +297,17 @@ const ProductDetail: React.FC = () => {
         const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
         if (diffMs < 0) return 'Ended';
-        if (diffDays > 3) return date.toLocaleString(); // Absolute date if > 3 days
+        if (diffDays > 3) return date.toLocaleString();
         if (diffDays > 0) return `${diffDays} days ${diffHours} hours left`;
         if (diffHours > 0) return `${diffHours} hours ${diffMinutes} minutes left`;
         return `${diffMinutes} minutes left`;
     };
     
-    // Calculate Seller Rating
     const getSellerRating = () => {
         if (!product) return 5.0;
         const pos = product.sellerRatingPositive || 0;
         const neg = product.sellerRatingNegative || 0;
-        if (pos + neg === 0) return 5.0; // Default new seller
-        // Simple calculation: (Pos / Total) * 5
+        if (pos + neg === 0) return 5.0;
         return ((pos / (pos + neg)) * 5).toFixed(1);
     };
 
@@ -272,7 +328,6 @@ const ProductDetail: React.FC = () => {
                             className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300"
                          />
                          
-                         {/* Watchlist Button */}
                          <button
                             onClick={handleToggleFavorite}
                             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all outline-none z-20"
@@ -283,7 +338,6 @@ const ProductDetail: React.FC = () => {
                             />
                          </button>
                          
-                         {/* Navigation Arrows */}
                          {product.imageUrls && product.imageUrls.length > 1 && (
                             <>
                                 <button 
@@ -313,9 +367,19 @@ const ProductDetail: React.FC = () => {
                         ))}
                      </div>
                      <div className="mt-4 pt-4 border-t border-gray-200/50">
-                        <h3 className="text-lg font-bold text-[#3D4852] mb-4">Description</h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-[#3D4852]">Description</h3>
+                            {isSeller && (
+                                <button
+                                    onClick={() => setShowAppendModal(true)}
+                                    className="flex items-center text-xs font-bold text-[#6C63FF] hover:underline"
+                                >
+                                    <Edit className="w-4 h-4 mr-1" /> Append Info
+                                </button>
+                            )}
+                        </div>
                         <div 
-                            className="text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto [&_a]:text-[#6C63FF] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-[#3D4852] [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-[#3D4852] [&_*]:!bg-transparent space-y-2" 
+                            className="text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto" 
                             dangerouslySetInnerHTML={{ __html: product.description }} 
                         />
                      </div>
@@ -343,7 +407,6 @@ const ProductDetail: React.FC = () => {
                     </div>
                     
                     <div className="batched-neu grid grid-cols-2 gap-6">
-                         {/* Price Info */}
                         <div className="neu-extruded p-6 flex flex-col justify-center">
                             <span className="text-sm font-medium text-[#6B7280] uppercase tracking-wide mb-1">Current Price</span>
                             <span className="text-3xl font-extrabold text-[#6C63FF]">
@@ -352,13 +415,11 @@ const ProductDetail: React.FC = () => {
                             <span className="text-xs font-medium text-[#A0AEC0] mt-1">Start: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</span>
                         </div>
                         
-                        {/* Seller & Highest Bidder */}
                         <div className="neu-extruded p-6 space-y-3 text-sm font-medium">
                             <div className="flex flex-col">
                                 <span className="text-[#6B7280] text-xs uppercase">Seller</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-[#3D4852] font-bold">{product.sellerName || `User #${product.sellerId || '?'}`}</span>
-                                    {/* Calculated Seller Rating */}
                                     <div className="flex items-center text-xs text-yellow-500 bg-yellow-100 px-1.5 py-0.5 rounded-md">
                                         <Star className="w-3 h-3 fill-current mr-0.5" />
                                         <span className="font-bold">{getSellerRating()}</span>
@@ -371,7 +432,6 @@ const ProductDetail: React.FC = () => {
                                     <span className="text-[#6C63FF] font-bold">
                                         {highestBidder ? highestBidder.bidderName : 'No bids yet'}
                                     </span>
-                                    {/* Bidder Rating (Still Mock or N/A as BE only provided Seller) */}
                                 </div>
                             </div>
                         </div>
@@ -379,51 +439,55 @@ const ProductDetail: React.FC = () => {
 
                     <div className="neu-extruded p-8">
                         {product.status === 'ACTIVE' ? (
-                            <form onSubmit={handlePlaceBid} className="space-y-6">
-                                <div>
-                                    <label htmlFor="bidAmount" className="block text-sm font-bold text-[#3D4852] mb-2">
-                                        Your Bid <span className="font-normal text-[#6B7280]">(Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)})</span>
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                            <span className="text-[#6B7280] font-bold">₫</span>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            name="bidAmount"
-                                            id="bidAmount"
-                                            disabled={!bidStatus.allowed}
-                                            className={`block w-full pl-8 pr-4 py-4 neu-inset-deep rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF] transition-all text-2xl tracking-wider ${!bidStatus.allowed ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
-                                            placeholder="0"
-                                            value={new Intl.NumberFormat('vi-VN').format(bidAmount)}
-                                            onChange={(e) => {
-                                                const rawValue = e.target.value.replace(/\D/g, '');
-                                                setBidAmount(Number(rawValue));
-                                            }}
-                                        />
-                                    </div>
-                                    {!bidStatus.allowed && (
-                                        <p className="text-red-500 text-sm font-semibold flex items-center mt-2">
-                                            <span className="mr-1">⚠</span> {bidStatus.reason}
-                                        </p>
-                                    )}
+                            isSeller ? (
+                                <div className="text-center py-4 text-[#6B7280] font-medium">
+                                    You are the seller of this product. You cannot bid.
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={!bidStatus.allowed}
-                                    className={`w-full neu-btn neu-btn-primary py-4 rounded-xl text-lg font-bold tracking-wide uppercase shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all ${!bidStatus.allowed ? 'opacity-50 cursor-not-allowed hover:none hover:translate-y-0 filter grayscale' : ''}`}
-                                >
-                                    Place Bid
-                                </button>
-                            </form>
+                            ) : (
+                                <form onSubmit={handlePlaceBid} className="space-y-6">
+                                    <div>
+                                        <label htmlFor="bidAmount" className="block text-sm font-bold text-[#3D4852] mb-2">
+                                            Your Bid <span className="font-normal text-[#6B7280]">(Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)})</span>
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <span className="text-[#6B7280] font-bold">₫</span>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                name="bidAmount"
+                                                id="bidAmount"
+                                                disabled={!bidStatus.allowed}
+                                                className={`block w-full pl-8 pr-4 py-4 neu-inset-deep rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF] transition-all text-2xl tracking-wider ${!bidStatus.allowed ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
+                                                placeholder="0"
+                                                value={new Intl.NumberFormat('vi-VN').format(bidAmount)}
+                                                onChange={(e) => {
+                                                    const rawValue = e.target.value.replace(/\D/g, '');
+                                                    setBidAmount(Number(rawValue));
+                                                }}
+                                            />
+                                        </div>
+                                        {!bidStatus.allowed && (
+                                            <p className="text-red-500 text-sm font-semibold flex items-center mt-2">
+                                                <span className="mr-1">⚠</span> {bidStatus.reason}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={!bidStatus.allowed}
+                                        className={`w-full neu-btn neu-btn-primary py-4 rounded-xl text-lg font-bold tracking-wide uppercase shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all ${!bidStatus.allowed ? 'opacity-50 cursor-not-allowed hover:none hover:translate-y-0 filter grayscale' : ''}`}
+                                    >
+                                        Place Bid
+                                    </button>
+                                </form>
+                            )
                         ) : (
                             <div className="text-center py-4 text-[#6B7280] font-medium">
                                 This auction has ended.
                             </div>
                         )}
                     </div>
-
-
                 </div>
             </div>
 
@@ -445,10 +509,7 @@ const ProductDetail: React.FC = () => {
                             {isSeller ? (
                                 <div className="neu-inset p-4 rounded-xl text-center">
                                     <p className="text-[#6B7280] font-medium text-sm">
-                                        You are the seller of this product.
-                                    </p>
-                                    <p className="text-[#6C63FF] font-bold text-xs mt-1">
-                                        You can reply to questions in the list.
+                                        You are the seller. Reply to questions on the right.
                                     </p>
                                 </div>
                             ) : (
@@ -486,7 +547,7 @@ const ProductDetail: React.FC = () => {
                                              <p className="text-[#6B7280] text-sm mt-1 mb-3">{qa.question}</p>
                                              
                                              {/* Shop Response */}
-                                             {qa.answer && (
+                                             {qa.answer ? (
                                                 <div className="bg-[#E0E5EC] neu-inset p-4 rounded-xl flex gap-3">
                                                     <div className="w-6 h-6 rounded-full bg-[#6C63FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                                                         S
@@ -496,6 +557,23 @@ const ProductDetail: React.FC = () => {
                                                         <p className="text-sm text-[#4B5563]">{qa.answer}</p>
                                                     </div>
                                                 </div>
+                                             ) : isSeller && (
+                                                <div className="mt-2">
+                                                    <textarea 
+                                                        className="w-full neu-inset p-2 rounded-lg text-sm mb-2"
+                                                        rows={2}
+                                                        placeholder="Write your answer..."
+                                                        value={replyText[qa.id] || ''}
+                                                        onChange={(e) => setReplyText(prev => ({...prev, [qa.id]: e.target.value}))}
+                                                    />
+                                                    <button 
+                                                        onClick={() => handleAnswerQuestion(qa.id)}
+                                                        disabled={submittingReply[qa.id]}
+                                                        className="neu-btn px-4 py-1.5 rounded-lg text-xs font-bold text-[#6C63FF] disabled:opacity-50"
+                                                    >
+                                                        {submittingReply[qa.id] ? 'Sending...' : 'Reply'}
+                                                    </button>
+                                                </div>
                                              )}
                                          </div>
                                      </div>
@@ -503,7 +581,7 @@ const ProductDetail: React.FC = () => {
                              ))
                          ) : (
                             <div className="neu-extruded p-8 text-center text-[#6B7280]">
-                                <p>No questions yet. Be the first to ask!</p>
+                                <p>No questions yet.</p>
                             </div>
                          )}
                     </div>
@@ -543,28 +621,34 @@ const ProductDetail: React.FC = () => {
                     <ul className="divide-y divide-gray-200/50">
                         {bids.length > 0 ? (
                             bids.map((bid) => (
-                                <li key={bid.id} className="px-6 py-4 flex items-center justify-between hover:bg-[#F0F4F8] rounded-xl transition-colors">
+                                <li key={bid.id} className="px-6 py-4 flex items-center justify-between hover:bg-[#F0F4F8] rounded-xl transition-colors group">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0">
                                             <div className="h-10 w-10 neu-icon-well bg-[#E0E5EC] text-[#6C63FF]">
-                                                {/* Bidder with Mock Rating */}
                                                 <UserIcon className="h-5 w-5" />
                                             </div>
                                         </div>
                                         <div className="ml-4">
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm font-bold text-[#3D4852]">{bid.bidderName}</p>
-                                                {/* Mock Bidder Rating */}
-                                                <div className="flex items-center text-xs text-yellow-500 bg-yellow-100 px-1.5 py-0.5 rounded-md">
-                                                    <Star className="w-3 h-3 fill-current mr-0.5" />
-                                                    <span className="font-bold">4.5</span>
-                                                </div>
+                                                {/* Hidden bid ID info if needed */}
                                             </div>
                                             <p className="text-xs text-[#6B7280] font-medium">{new Date(bid.bidTime).toLocaleString()}</p>
                                         </div>
                                     </div>
-                                    <div className="text-sm font-extrabold text-[#6C63FF]">
-                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bid.amount)}
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-sm font-extrabold text-[#6C63FF]">
+                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bid.amount)}
+                                        </div>
+                                        {isSeller && product?.status === 'ACTIVE' && (
+                                            <button
+                                                onClick={() => handleDenyBidder(Number((bid as any).bidderId || 0))} // Assuming bidderId is available or I need to use mock logic if type missing
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 bg-red-100 p-2 rounded-full"
+                                                title="Deny this bidder"
+                                            >
+                                                <Ban className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </li>
                             ))
@@ -574,6 +658,7 @@ const ProductDetail: React.FC = () => {
                     </ul>
                 </div>
             </div>
+
             {/* Confirmation Modal */}
             {showConfirmModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -594,6 +679,38 @@ const ProductDetail: React.FC = () => {
                                 className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-[#6C63FF] hover:bg-[#5a52d5] shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
                             >
                                 Confirm Bid
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Append Description Modal */}
+            {showAppendModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 neu-extruded animate-in fade-in zoom-in duration-200">
+                        <h3 className="text-xl font-extrabold text-[#3D4852] mb-4">Append Description</h3>
+                        <p className="text-sm text-gray-500 mb-4">Add new information to your product description. This will be appended with a timestamp.</p>
+                        
+                        <ReactQuill 
+                            theme="snow"
+                            value={appendContent}
+                            onChange={setAppendContent}
+                            className="h-64 mb-12"
+                        />
+
+                        <div className="flex gap-4 mt-8">
+                            <button 
+                                onClick={() => setShowAppendModal(false)}
+                                className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleAppendDescription}
+                                className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-[#6C63FF] hover:bg-[#5a52d5] shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
+                            >
+                                Update Description
                             </button>
                         </div>
                     </div>

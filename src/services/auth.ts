@@ -87,17 +87,18 @@ export const authService = {
     },
 
     addToFavorites: async (productId: number) => {
-        // Backend Toggle Logic via POST /users/favorites/{productId}
-        const response = await api.post(`/users/favorites/${productId}`);
+        // Backend Toggle Logic via POST    addToFavorites: async (productId: number) => {
+        const response = await api.post(`/favorites/${productId}`);
         return response.data;
     },
-
     removeFromFavorites: async (productId: number) => {
-        // Backend uses same Toggle logic
-        const response = await api.post(`/users/favorites/${productId}`);
+        const response = await api.delete(`/favorites/${productId}`);
         return response.data;
     },
-
+    requestSellerUpgrade: async () => {
+        const response = await api.post('/users/request-upgrade');
+        return response.data;
+    },
     // Rating Features
     getRatings: async (userId?: number) => {
         // If userId is provided, get that user's ratings. Else get own.

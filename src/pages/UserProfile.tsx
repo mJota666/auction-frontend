@@ -60,25 +60,43 @@ const UserProfile: React.FC = () => {
 
     const onSubmit = async (data: ProfileFormInputs) => {
         try {
-            await authService.updateProfile(data);
+            // 1. Handle Password Change if requested
+            if (data.newPassword && data.currentPassword) {
+                 await authService.changePassword({
+                     oldPassword: data.currentPassword,
+                     newPassword: data.newPassword,
+                     confirmPassword: data.newPassword
+                 });
+                 toast.success('Password changed successfully');
+            }
+
+            // 2. Handle Profile Update
+            const profileData = {
+                fullName: data.fullName,
+                email: data.email, // Email is disabled but might be needed by BE or just ignored
+                address: data.address,
+                dob: data.dob
+            };
+
+            await authService.updateProfile(profileData);
+            
             if (token && user) {
                 const newUserData = { 
                     ...user, 
-                    fullName: data.fullName 
+                    fullName: data.fullName,
+                    address: data.address,
+                    dob: data.dob
                 };
-                login(token, '', newUserData); // Note: Login signature might need check, passing empty refresh token for now as we just update user
-                // Wait, login signature is login(token, refreshToken, user). 
-                // We should get refreshToken from locStorage or just not re-call login if we only want to update user context.
-                // Or better, update AuthContext to have `updateUser(user)` method.
-                // For now, I'll allow this but standard login might reset refresh token if passed empty. 
-                // Let's retrieve existing one.
+                // Re-hydrate context
                 const storedRefresh = localStorage.getItem('refreshToken') || '';
                 login(token, storedRefresh, newUserData);
             }
             toast.success('Profile updated successfully');
             setIsEditing(false);
+            reset({ ...data, currentPassword: '', newPassword: '' }); // Clear passwords
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to update profile');
+            console.error('Update error:', error);
+            toast.error(error.response?.data?.message || 'Failed to update settings');
         }
     };
 

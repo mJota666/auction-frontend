@@ -63,7 +63,12 @@ export const authService = {
     },
 
     updateProfile: async (data: any) => {
-        const response = await api.put('/users/profile', data);
+        const response = await api.put('/users/me', data);
+        return response.data;
+    },
+
+    changePassword: async (data: any) => {
+        const response = await api.put('/users/me/password', data);
         return response.data;
     },
 

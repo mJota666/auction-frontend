@@ -23,6 +23,8 @@ import UserManagement from './pages/admin/UserManagement';
 import CategoryManagement from './pages/admin/CategoryManagement';
 import { AdminProvider } from './context/AdminContext';
 import ProductManagement from './pages/admin/ProductManagement';
+import ProtectedRoute from './components/ProtectedRoute';
+import ForgotPassword from './pages/ForgotPassword';
 
 // Main App Component
 
@@ -32,7 +34,7 @@ const App: React.FC = () => {
       <AuthProvider>
         <ProductProvider>
         <Routes>
-          {/* Standalone Routes (No MainLayout) */}
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/search" element={
             <>
@@ -42,55 +44,57 @@ const App: React.FC = () => {
           } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Protected/Inner Routes (With MainLayout) */}
+          {/* Public Routes with MainLayout */}
+          <Route element={<MainLayout />}>
+              <Route path="/products/:id" element={<ProductDetail />} />
+          </Route>
+
+          {/* Protected Routes with MainLayout */}
+          <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+             <Route path="/create-auction" element={<CreateAuction />} />
+             <Route path="/favorites" element={<Favorites />} />
+             <Route path="/my-orders" element={<MyOrders />} />
+             <Route path="/my-sales" element={<MySales />} />
+             <Route path="/checkout/:id" element={<Checkout />} />
+             
+             {/* Admin Routes - Nested Protection */}
+             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                <Route path="/admin" element={
+                  <AdminProvider>
+                    <div className="w-full h-full"><AdminDashboard /></div>
+                  </AdminProvider>
+                } />
+                <Route path="/admin/users" element={
+                  <AdminProvider>
+                    <div className="w-full h-full"><UserManagement /></div>
+                  </AdminProvider>
+                } />
+                <Route path="/admin/categories" element={
+                  <AdminProvider>
+                    <div className="w-full h-full"><CategoryManagement /></div>
+                  </AdminProvider>
+                } />
+                <Route path="/admin/products" element={
+                  <AdminProvider>
+                    <div className="w-full h-full"><ProductManagement /></div>
+                  </AdminProvider>
+                } />
+             </Route>
+          </Route>
+          
           <Route path="/profile" element={
-            <div className="h-screen flex flex-col bg-[#F3F4F8] overflow-hidden">
-                <Navbar />
-                <div className="flex-1 flex flex-col pt-20 overflow-hidden w-full">
-                    <UserProfile />
+            <ProtectedRoute>
+                <div className="h-screen flex flex-col bg-[#F3F4F8] overflow-hidden">
+                    <Navbar />
+                    <div className="flex-1 flex flex-col pt-20 overflow-hidden w-full">
+                        <UserProfile />
+                    </div>
                 </div>
-            </div>
+            </ProtectedRoute>
           } />
 
-          <Route element={<MainLayout />}>
-            <Route path="/products/:id" element={<ProductDetail />} />
-            <Route path="/create-auction" element={<CreateAuction />} />
-            <Route path="/favorites" element={<Favorites />} />
-            <Route path="/my-orders" element={<MyOrders />} />
-            <Route path="/my-sales" element={<MySales />} />
-            <Route path="/checkout/:id" element={<Checkout />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <AdminProvider>
-                <div className="w-full h-full">
-                  <AdminDashboard />
-                </div>
-              </AdminProvider>
-            } />
-            <Route path="/admin/users" element={
-              <AdminProvider>
-                <div className="w-full h-full">
-                   <UserManagement />
-                </div>
-              </AdminProvider>
-            } />
-            <Route path="/admin/categories" element={
-              <AdminProvider>
-                <div className="w-full h-full">
-                  <CategoryManagement />
-                </div>
-              </AdminProvider>
-            } />
-            <Route path="/admin/products" element={
-              <AdminProvider>
-                <div className="w-full h-full">
-                  <ProductManagement />
-                </div>
-              </AdminProvider>
-            } />
-          </Route>
         </Routes>
         <ToastContainer position="bottom-right" />
         </ProductProvider>

@@ -1,13 +1,55 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, LogOut, PlusCircle, Heart, LayoutDashboard } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { productService } from '../services/product';
 
+const CategoryDropdownContent = () => {
+    const [categories, setCategories] = useState<any[]>([]);
+    
+    useEffect(() => {
+        const fetchCats = async () => {
+            try {
+                const data = await productService.getCategories();
+                // Asssuming data is list of categories. If nested, handle accordingly.
+                // Requirement said 2 levels. For dropdown, maybe just list parents?
+                // Or maybe parents and on click expand.
+                // Let's just list top 5-10 or all if few.
+                setCategories(Array.isArray(data) ? data : []);
+            } catch (e) {
+                console.error("Failed to load categories for menu", e);
+            }
+        };
+        fetchCats();
+    }, []);
+
+    return (
+        <div className="max-h-64 overflow-y-auto">
+            {categories.map((cat: any) => (
+                <Link 
+                    key={cat.id} 
+                    to={`/search?categoryId=${cat.id}`} 
+                    className="block px-4 py-2 text-sm text-gray-600 hover:bg-[#F3F4F8] hover:text-[#6C63FF] transition-colors"
+                >
+                    {cat.name}
+                </Link>
+            ))}
+        </div>
+    );
+};
 
 const Navbar: React.FC = () => {
+// ... existing Navbar code ...
   const { isAuthenticated, user, logout } = useAuth();
-  console.log("user ne:", user)
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
+
+  const handleLogout = () => {
+      navigate('/', { replace: true });
+      // Timeout to ensure navigation unmounts protected components before auth state clears
+      setTimeout(() => logout(), 100);
+  };
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-4 bg-[#E0E5EC]/90 backdrop-blur-md border-b border-white/20">
@@ -38,9 +80,25 @@ const Navbar: React.FC = () => {
       </div>
     </Link>
       <div className="hidden md:flex space-x-6 text-sm font-medium text-[#6B7280]">
+        <div className="relative group">
+            <button className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded flex items-center gap-1">
+                Categories
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform z-50 overflow-hidden border border-gray-100">
+                <Link to="/search" className="block px-4 py-3 hover:bg-[#F3F4F8] text-[#3D4852] font-semibold border-b border-gray-100">All Categories</Link>
+                {/* Check if we want dynamic categories here. For now, hardcoded prominent ones or fetched? 
+                    Fetching in Navbar might be heavy if not cached. 
+                    Let's use a standard list or fetch if simple. 
+                    Actually, let's keep it static for 'Browse' but the User Requirement implies dynamic.
+                    I will add a useEffect to fetch them.
+                */}
+                <CategoryDropdownContent />
+            </div>
+        </div>
         {isHomePage && (
             <>
-                <Link to="/search" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">Browse Auctions</Link>
+                {/* <Link to="/search" ... Removed redundant Browse link if we have Categories */ }
                 <a href="#features" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">Features</a>
                 <a href="#how-it-works" className="hover:text-[#6C63FF] transition-colors px-4 py-2 rounded-xl hover:bg-[#E0E5EC] hover:neu-extruded">How it Works</a>
             </>
@@ -69,7 +127,7 @@ const Navbar: React.FC = () => {
              <Link to="/profile" className="w-10 h-10 neu-btn hover:text-[#6C63FF]" title="Profile">
                 <User size={20} />
              </Link>
-             <button onClick={logout} className="w-10 h-10 neu-btn text-red-500 hover:text-red-600" title="Logout">
+             <button onClick={handleLogout} className="w-10 h-10 neu-btn text-red-500 hover:text-red-600" title="Logout">
                 <LogOut size={20} />
              </button>
           </>

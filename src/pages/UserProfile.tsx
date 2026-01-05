@@ -119,7 +119,7 @@ const UserProfile: React.FC = () => {
             
             <div className="w-full flex flex-row gap-8 flex-1 overflow-hidden">
                 {/* Sidebar Navigation */}
-                <div className="w-1/4 flex-shrink-0 h-full overflow-y-auto pr-1 custom-scrollbar">
+                <div className="w-1/4 flex-shrink-0 h-full overflow-y-auto p-6 custom-scrollbar">
                     <div className="neu-extruded rounded-[2rem] p-6 min-h-full flex flex-col justify-between">
                         <div>
                             <div className="flex flex-col items-center mb-6">
@@ -159,8 +159,8 @@ const UserProfile: React.FC = () => {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 w-3/4 h-full overflow-y-auto px-1 custom-scrollbar pb-2">
-                    <div className="bg-white rounded-[2.5rem] p-8 neu-extruded min-h-full w-full">
+                <div className="flex-1 w-3/4 h-full overflow-y-auto p-6 custom-scrollbar">
+                    <div className="rounded-[2.5rem] p-8 neu-extruded min-h-full w-full">
                         
                         {activeTab === 'settings' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">

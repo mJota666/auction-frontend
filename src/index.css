@@ -55,6 +55,7 @@
     border-radius: 1rem;
     /* 16px */
     transition: all 0.2s ease;
+    font-weight: bold;
     @apply flex items-center justify-center font-medium text-[#3D4852] active:translate-y-[1px];
   }
 

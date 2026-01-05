@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services/auth';
 import { toast } from 'react-toastify';
-import { User, Heart, Gavel, ShoppingBag, Truck, Package, Star } from 'lucide-react';
+import { User, Heart, Gavel, ShoppingBag, Truck, Package, Star, Briefcase } from 'lucide-react';
 
 // Sub-components / Pages
 import MyBids from '../components/profile/MyBids';
@@ -14,6 +14,7 @@ import MyRatings from '../components/profile/MyRatings';
 import MyOrders from './MyOrders';
 import MySales from './MySales';
 import Favorites from './Favorites';
+import UpgradeModal from '../components/UpgradeModal';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Full Name must be at least 2 characters'),
@@ -31,6 +32,7 @@ const UserProfile: React.FC = () => {
     const { user, login, token } = useAuth();
     const [activeTab, setActiveTab] = useState('settings');
     const [isEditing, setIsEditing] = useState(false);
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
     const {
         register,
@@ -114,16 +116,33 @@ const UserProfile: React.FC = () => {
     }
 
     return (
-        <div className="px-20 h-full flex flex-col justify-center items-center py-6">
-            <h1 className="text-3xl font-bold text-[#3D4852] mb-6">Account Management</h1>
+        <div className="px-20 h-full flex flex-col py-6">
+            <div className="flex justify-between items-end mb-6">
+                <h1 className="text-3xl font-bold text-[#3D4852]">Account Management</h1>
+                
+                {user?.role !== 'SELLER' && user?.role !== 'ADMIN' && (
+                    <div className="flex items-center gap-4 mb-1">
+                        <span className="text-xs text-gray-500 font-bold uppercase tracking-wide hidden md:block opacity-70">
+                            Want to start selling?
+                        </span>
+                        <button
+                            onClick={() => setIsUpgradeModalOpen(true)}
+                            className="neu-btn px-6 py-2.5 rounded-xl border-2 border-[#6C63FF] text-[#6C63FF] hover:bg-[#6C63FF] hover:text-white font-bold text-sm flex items-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-[#6C63FF]/30"
+                        >
+                            <Briefcase className="w-4 h-4" />
+                            Request Upgrade
+                        </button>
+                    </div>
+                )}
+            </div>
             
-            <div className="w-full flex flex-row gap-8 flex-1 overflow-hidden">
+            <div className="w-full flex flex-row gap-1 flex-1 overflow-hidden">
                 {/* Sidebar Navigation */}
                 <div className="w-1/4 flex-shrink-0 h-full overflow-y-auto p-6 custom-scrollbar">
                     <div className="neu-extruded rounded-[2rem] p-6 min-h-full flex flex-col justify-between">
                         <div>
                             <div className="flex flex-col items-center mb-6">
-                                <div className="w-20 h-20 rounded-full neu-inset flex items-center justify-center mb-3 p-1">
+                                <div className="w-20 h-20 !rounded-full neu-inset flex items-center justify-center mb-3 p-2">
                                     <div className={`w-full h-full rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-inner ${user?.role === 'SELLER' ? 'bg-[#6C63FF]' : 'bg-[#3D4852]'}`}>
                                         {user?.fullName?.[0] || 'U'}
                                     </div>
@@ -149,11 +168,13 @@ const UserProfile: React.FC = () => {
                                 ))}
                             </nav>
                         </div>
-                        
-                        <div className="mt-8 pt-6 border-t border-[#d1d9e6]">
-                            <p className="text-center text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                                Member since {new Date().getFullYear()}
-                            </p>
+
+                        <div className="mt-auto">                            
+                            <div className="pt-6 border-t border-[#d1d9e6]">
+                                <p className="text-center text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                                    Member since {new Date().getFullYear()}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -241,26 +262,7 @@ const UserProfile: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="mt-8 flex justify-between items-center">
-                                                <button 
-                                                    type="button"
-                                                    onClick={async () => {
-                                                        const reason = window.prompt("Please provide a reason for upgrading to Seller:");
-                                                        if (!reason) return;
-                                                        
-                                                        try {
-                                                            await authService.requestSellerUpgrade(reason);
-                                                            toast.success('Upgrade request sent successfully!');
-                                                        } catch (error) {
-                                                            toast.error('Failed to send upgrade request');
-                                                        }
-                                                    }}
-                                                    className="text-sm text-[#6C63FF] font-bold hover:underline"
-                                                    disabled={user?.role === 'SELLER'}
-                                                >
-                                                    {user?.role === 'SELLER' ? 'You are already a Seller' : 'Request Seller Upgrade'}
-                                                </button>
-
-                                                <button type="submit" className="neu-btn-primary px-8 py-3 rounded-xl text-white font-bold">
+                                                <button type="submit" className="neu-btn-primary px-8 py-3 rounded-xl text-white font-bold ml-auto">
                                                     Save Changes
                                                 </button>
                                             </div>
@@ -281,6 +283,11 @@ const UserProfile: React.FC = () => {
                 </div>
             </div>
             
+            <UpgradeModal 
+                isOpen={isUpgradeModalOpen} 
+                onClose={() => setIsUpgradeModalOpen(false)} 
+            />
+
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;

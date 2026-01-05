@@ -96,12 +96,11 @@ export const authService = {
     },
 
     addToFavorites: async (productId: number) => {
-        // Backend Toggle Logic via POST    addToFavorites: async (productId: number) => {
-        const response = await api.post(`/favorites/${productId}`);
+        const response = await api.post(`/users/favorites/${productId}`);
         return response.data;
     },
     removeFromFavorites: async (productId: number) => {
-        const response = await api.delete(`/favorites/${productId}`);
+        const response = await api.delete(`/users/favorites/${productId}`);
         return response.data;
     },
     requestSellerUpgrade: async (reason: string) => {

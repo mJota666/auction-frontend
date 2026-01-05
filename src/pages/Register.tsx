@@ -12,6 +12,7 @@ const registerSchema = z.object({
   fullName: z.string().min(2, 'Full Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   address: z.string().min(10, 'Address must be detailed (at least 10 chars)'),
+  dob: z.string().refine(val => !isNaN(Date.parse(val)), "Invalid date"), // YYYY-MM-DD
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   terms: z.boolean().refine(val => val === true, 'You must accept the terms and conditions'),
@@ -59,7 +60,8 @@ const Register: React.FC = () => {
             fullName: data.fullName,
             email: data.email,
             password: data.password,
-            address: data.address
+            address: data.address,
+            dob: data.dob
         });
         
         setTempData(data);
@@ -161,6 +163,16 @@ const Register: React.FC = () => {
                       placeholder="Address (for shipping)"
                     />
                     {errors.address && <p className="text-red-500 text-xs mt-1 px-3">{errors.address.message}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="dob" className="sr-only">Date of Birth</label>
+                    <input
+                      id="dob"
+                      type="date"
+                      {...register('dob')}
+                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.dob ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
+                    />
+                    {errors.dob && <p className="text-red-500 text-xs mt-1 px-3">{errors.dob.message}</p>}
                   </div>
                   <div>
                     <label htmlFor="password" className="sr-only">Password</label>

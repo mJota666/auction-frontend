@@ -13,7 +13,8 @@ export interface RegisterData {
     fullName: string;
     email: string;
     password: string;
-    address?: string;
+    address?: string; // Optional but good to have
+    dob?: string; // Date of Birth YYYY-MM-DD
 }
 
 export interface LoginData {
@@ -42,7 +43,8 @@ export const authService = {
             fullname: data.fullName,
             email: data.email,
             password: data.password,
-            address: data.address
+            address: data.address,
+            dob: data.dob
         };
         const response = await api.post<AuthResponse>('/auth/register', payload);
         return response.data;
@@ -59,7 +61,7 @@ export const authService = {
     },
 
     updateProfile: async (data: any) => {
-        const response = await api.put('/users/me', data);
+        const response = await api.put('/users/profile', data);
         return response.data;
     },
 
@@ -95,8 +97,8 @@ export const authService = {
         const response = await api.delete(`/favorites/${productId}`);
         return response.data;
     },
-    requestSellerUpgrade: async () => {
-        const response = await api.post('/users/request-upgrade');
+    requestSellerUpgrade: async (reason: string) => {
+        const response = await api.post('/users/upgrade-request', { reason });
         return response.data;
     },
     // Rating Features
@@ -114,6 +116,21 @@ export const authService = {
             score, // 1 or -1
             comment,
             orderId
+        });
+        return response.data;
+    },
+
+    forgotPassword: async (email: string) => {
+        const response = await api.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
+    resetPassword: async (email: string, otp: string, newPassword: string) => {
+        const response = await api.post('/auth/reset-password', {
+            email,
+            otp,
+            newPassword,
+            confirmPassword: newPassword // Backend requires this field
         });
         return response.data;
     }

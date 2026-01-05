@@ -18,6 +18,8 @@ import Favorites from './Favorites';
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Full Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
+  address: z.string().optional(),
+  dob: z.string().optional(), // YYYY-MM-DD
   currentPassword: z.string().optional(),
   newPassword: z.string().min(6, 'Password must be at least 6 characters').optional(),
 });
@@ -39,6 +41,8 @@ const UserProfile: React.FC = () => {
         defaultValues: {
             fullName: user?.fullName || '',
             email: user?.email || '',
+            address: (user as any)?.address || '',
+            dob: (user as any)?.dob?.split('T')[0] || (user as any)?.birthDate?.split('T')[0] || '', // Handle various back-compat names
         }
     });
 
@@ -47,6 +51,8 @@ const UserProfile: React.FC = () => {
             reset({
                 fullName: user.fullName || '',
                 email: user.email || '',
+                address: (user as any)?.address || '',
+                dob: (user as any)?.dob?.split('T')[0] || (user as any)?.birthDate?.split('T')[0] || '',
             });
         }
     }, [user, reset]);
@@ -165,9 +171,28 @@ const UserProfile: React.FC = () => {
                                             <label className="text-sm font-bold text-[#3D4852] ml-1">Email</label>
                                             <input
                                                 type="email"
-                                                disabled
+                                                disabled={!isEditing}
                                                 {...register('email')}
-                                                className="w-full px-5 py-3.5 neu-inset rounded-2xl text-gray-500 bg-gray-50 opacity-60 cursor-not-allowed"
+                                                className={`w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all ${!isEditing ? 'opacity-60 bg-gray-50' : ''}`}
+                                            />
+                                            {errors.email && <p className="text-red-500 text-xs ml-1">{errors.email.message}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-[#3D4852] ml-1">Address</label>
+                                            <input
+                                                type="text"
+                                                disabled={!isEditing}
+                                                {...register('address')}
+                                                className={`w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all ${!isEditing ? 'opacity-60 bg-gray-50' : ''}`}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-[#3D4852] ml-1">Date of Birth</label>
+                                            <input
+                                                type="date"
+                                                disabled={!isEditing}
+                                                {...register('dob')}
+                                                className={`w-full px-5 py-3.5 neu-inset rounded-2xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all ${!isEditing ? 'opacity-60 bg-gray-50' : ''}`}
                                             />
                                         </div>
                                     </div>
@@ -200,8 +225,11 @@ const UserProfile: React.FC = () => {
                                                 <button 
                                                     type="button"
                                                     onClick={async () => {
+                                                        const reason = window.prompt("Please provide a reason for upgrading to Seller:");
+                                                        if (!reason) return;
+                                                        
                                                         try {
-                                                            await authService.requestSellerUpgrade();
+                                                            await authService.requestSellerUpgrade(reason);
                                                             toast.success('Upgrade request sent successfully!');
                                                         } catch (error) {
                                                             toast.error('Failed to send upgrade request');

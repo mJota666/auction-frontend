@@ -37,15 +37,18 @@ export const adminService = {
         return response.data;
     },
     getUpgradeRequests: async () => {
-        const response = await api.get<User[]>('/admin/users/upgrade-requests');
+        const response = await api.get<User[]>('/admin/upgrade-requests');
         return response.data;
     },
     approveUpgradeRequest: async (userId: number) => {
-        const response = await api.post(`/admin/users/${userId}/approve-upgrade`);
+        const response = await api.post(`/admin/upgrade-requests/${userId}/approve`);
         return response.data;
     },
-    rejectUpgradeRequest: async (userId: number) => {
-        const response = await api.post(`/admin/users/${userId}/reject-upgrade`);
+    rejectUpgradeRequest: async (userId: number, reason: string = 'Rejected by Admin') => {
+        // Using query param for reason as per guide: ?reason=...
+        const response = await api.post(`/admin/upgrade-requests/${userId}/reject`, {}, {
+            params: { reason }
+        });
         return response.data;
     },
 
@@ -96,7 +99,7 @@ export const adminService = {
         return response.data;
     },
     deleteProduct: async (id: number) => {
-        const response = await api.delete(`/admin/products/${id}`);
+        const response = await api.delete(`/products/admin/products/${id}`);
         return response.data;
     },
 

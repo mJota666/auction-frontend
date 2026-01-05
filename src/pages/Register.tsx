@@ -7,6 +7,7 @@ import AuthScene from '../components/AuthScene';
 import { authService } from '../services/auth';
 import { toast } from 'react-toastify';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { User, Mail, MapPin, Calendar, Lock, UserPlus, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full Name must be at least 2 characters'),
@@ -55,7 +56,6 @@ const Register: React.FC = () => {
   const onInfoSubmit = async (data: RegisterFormInputs) => {
     setLoading(true);
     try {
-        // Step 1: Register (Backend sends OTP email)
         await authService.register({
             fullName: data.fullName,
             email: data.email,
@@ -70,10 +70,8 @@ const Register: React.FC = () => {
         
     } catch (err: any) {
         console.error('Registration error:', err);
-        // User requested to proceed to OTP even if error (likely Email send failure but User created)
-        toast.warning(err.response?.data?.message || 'Registration issue, attempting verification...');
-        setTempData(data);
-        setStep('otp');
+        // Do not advance to OTP on error (e.g., Email already exists)
+        toast.error(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
         setLoading(false);
     }
@@ -85,9 +83,7 @@ const Register: React.FC = () => {
 
       setLoading(true);
       try {
-        // Step 2: Verify OTP
         await authService.verifyAccount(tempData.email, otp);
-        
         toast.success('Verification successful! You can now login.');
         navigate('/login');
       } catch (err: any) {
@@ -99,27 +95,27 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 overflow-hidden">
+    <div className="flex h-screen w-full bg-[#E0E5EC] overflow-hidden">
       {/* Left Side - 3D Scene */}
-      <div className="hidden md:block w-1/2 h-full relative bg-slate-900">
+      <div className="hidden md:block w-1/2 h-full relative bg-slate-900 rounded-r-[3rem] shadow-2xl overflow-hidden">
         <div className="absolute inset-0 z-10">
             <AuthScene />
         </div>
-        <div className="absolute bottom-10 left-10 z-20 text-white/80">
-            <h2 className="text-3xl font-bold mb-2">Join the Auction</h2>
-            <p className="text-lg">Create an account to start bidding today.</p>
+        <div className="absolute bottom-10 left-10 z-20 text-white/90">
+            <h2 className="text-4xl font-bold mb-3 drop-shadow-md">Join the Auction</h2>
+            <p className="text-xl font-light drop-shadow-sm">Create an account to start bidding on exclusive items today.</p>
         </div>
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full md:w-1/2 h-full flex items-center justify-center p-8 relative z-30 overflow-y-auto">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Create Account</h1>
-            <p className="mt-2 text-sm text-slate-600">
+      <div className="w-full md:w-1/2 h-full flex items-center justify-center p-8 relative z-30 overflow-y-auto custom-scrollbar">
+        <div className="max-w-md w-full neu-extruded p-10 rounded-[2.5rem] my-8">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-extrabold text-[#3D4852] tracking-tight mb-2">Create Account</h1>
+            <p className="mt-2 text-sm text-gray-500 font-medium">
                {step === 'info' ? 'Already have an account? ' : 'Verification '}
                {step === 'info' && (
-                  <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                  <Link to="/login" className="font-bold text-[#6C63FF] hover:underline transition-colors">
                     Sign in
                   </Link>
                )}
@@ -127,137 +123,156 @@ const Register: React.FC = () => {
           </div>
           
           {step === 'info' ? (
-              <form className="mt-8 space-y-6" onSubmit={handleSubmit(onInfoSubmit)}>
-                <div className="rounded-md shadow-sm -space-y-px">
+              <form className="space-y-6" onSubmit={handleSubmit(onInfoSubmit)}>
+                <div className="space-y-4">
                   <div>
-                    <label htmlFor="full-name" className="sr-only">Full Name</label>
-                    <input
-                      id="full-name"
-                      type="text"
-                      autoComplete="name"
-                      {...register('fullName')}
-                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.fullName ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                      placeholder="Full Name"
-                    />
-                    {errors.fullName && <p className="text-red-500 text-xs mt-1 px-3">{errors.fullName.message}</p>}
+                    <div className="relative">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          {...register('fullName')}
+                          className={`w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.fullName ? 'border border-red-500' : ''}`}
+                          placeholder="Full Name"
+                        />
+                    </div>
+                    {errors.fullName && <p className="text-red-500 text-xs mt-1 ml-2">{errors.fullName.message}</p>}
                   </div>
+                  
                   <div>
-                    <label htmlFor="email-address" className="sr-only">Email address</label>
-                    <input
-                      id="email-address"
-                      type="email"
-                      autoComplete="email"
-                      {...register('email')}
-                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                      placeholder="Email address"
-                    />
-                    {errors.email && <p className="text-red-500 text-xs mt-1 px-3">{errors.email.message}</p>}
+                    <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                          type="email"
+                          {...register('email')}
+                          className={`w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.email ? 'border border-red-500' : ''}`}
+                          placeholder="Email address"
+                        />
+                    </div>
+                    {errors.email && <p className="text-red-500 text-xs mt-1 ml-2">{errors.email.message}</p>}
                   </div>
+                  
                   <div>
-                    <label htmlFor="address" className="sr-only">Address</label>
-                    <input
-                      id="address"
-                      type="text"
-                      {...register('address')}
-                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.address ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                      placeholder="Address (for shipping)"
-                    />
-                    {errors.address && <p className="text-red-500 text-xs mt-1 px-3">{errors.address.message}</p>}
+                    <div className="relative">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                          type="text"
+                          {...register('address')}
+                          className={`w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.address ? 'border border-red-500' : ''}`}
+                          placeholder="Address (for shipping)"
+                        />
+                    </div>
+                    {errors.address && <p className="text-red-500 text-xs mt-1 ml-2">{errors.address.message}</p>}
                   </div>
+
                   <div>
-                    <label htmlFor="dob" className="sr-only">Date of Birth</label>
-                    <input
-                      id="dob"
-                      type="date"
-                      {...register('dob')}
-                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.dob ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                    />
-                    {errors.dob && <p className="text-red-500 text-xs mt-1 px-3">{errors.dob.message}</p>}
+                    <div className="relative">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                          type="date"
+                          {...register('dob')}
+                          className={`w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.dob ? 'border border-red-500' : ''}`}
+                        />
+                    </div>
+                    {errors.dob && <p className="text-red-500 text-xs mt-1 ml-2">{errors.dob.message}</p>}
                   </div>
-                  <div>
-                    <label htmlFor="password" className="sr-only">Password</label>
-                    <input
-                      id="password"
-                      type="password"
-                      autoComplete="new-password"
-                      {...register('password')}
-                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.password ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                      placeholder="Password"
-                    />
-                    {errors.password && <p className="text-red-500 text-xs mt-1 px-3">{errors.password.message}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="confirm-password" className="sr-only">Confirm Password</label>
-                    <input
-                      id="confirm-password"
-                      type="password"
-                      autoComplete="new-password"
-                      {...register('confirmPassword')}
-                      className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.confirmPassword ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                      placeholder="Confirm Password"
-                    />
-                    {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 px-3">{errors.confirmPassword.message}</p>}
+
+                  <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                              type="password"
+                              {...register('password')}
+                              className={`w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.password ? 'border border-red-500' : ''}`}
+                              placeholder="Password"
+                            />
+                        </div>
+                        {errors.password && <p className="text-red-500 text-xs mt-1 ml-2">{errors.password.message}</p>}
+                      </div>
+                      <div>
+                        <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                              type="password"
+                              {...register('confirmPassword')}
+                              className={`w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.confirmPassword ? 'border border-red-500' : ''}`}
+                              placeholder="Confirm"
+                            />
+                        </div>
+                        {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 ml-2">{errors.confirmPassword.message}</p>}
+                      </div>
                   </div>
                 </div>
 
-                {/* Real Google reCaptcha */}
-                <div className="flex justify-center my-4">
+                <div className="flex justify-center my-4 scale-90 origin-center">
                     <ReCAPTCHA
                         sitekey={siteKey}
                         onChange={onCaptchaChange}
+                        theme="light"
                     />
                 </div>
                 {!siteKey && <p className="text-xs text-center text-red-500">Missing VITE_RECAPTCHA_SITE_KEY in .env</p>}
 
-                <div className="flex items-center">
+                <div className="flex items-center justify-center">
                   <input
                     id="terms"
                     type="checkbox"
                     {...register('terms')}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                    className="h-4 w-4 text-[#6C63FF] focus:ring-[#6C63FF] border-gray-300 rounded"
                   />
-                  <label htmlFor="terms" className="ml-2 block text-sm text-slate-900">
-                    I agree to the <a href="#" className="text-blue-600 hover:text-blue-500">Terms of Service</a> and <a href="#" className="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                  <label htmlFor="terms" className="ml-2 block text-sm text-gray-600 font-medium">
+                    I agree to the <a href="#" className="text-[#6C63FF] hover:underline">Terms</a> and <a href="#" className="text-[#6C63FF] hover:underline">Privacy Policy</a>
                   </label>
                 </div>
-                {errors.terms && <p className="text-red-500 text-xs mt-1">{errors.terms.message}</p>}
+                {errors.terms && <p className="text-red-500 text-xs text-center">{errors.terms.message}</p>}
 
                 <div>
                   <button
                     type="submit"
                     disabled={loading || !captchaVerified}
-                    className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${loading || !captchaVerified ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'}`}
+                    className={`w-full neu-btn-primary rounded-xl py-4 text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 ${loading || !captchaVerified ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {loading ? 'Processing...' : 'Register Account'}
+                    {loading ? 'Processing...' : (
+                        <>
+                            <UserPlus className="w-5 h-5" />
+                            <span>Register Account</span>
+                        </>
+                    )}
                   </button>
                 </div>
               </form>
           ) : (
               <form className="mt-8 space-y-6" onSubmit={onOtpSubmit}>
                   <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-4">We sent a verification code to <strong>{tempData?.email}</strong></p>
+                      <ShieldCheck className="w-12 h-12 text-[#6C63FF] mx-auto mb-4" />
+                      <p className="text-sm text-gray-600 mb-4 font-medium">
+                          We sent a verification code to <br/>
+                          <span className="font-bold text-[#3D4852] text-lg">{tempData?.email}</span>
+                      </p>
+                      
                       <input
                         type="text"
                         value={otp}
                         onChange={(e) => setOtp(e.target.value)}
-                        className="block w-full text-center text-2xl tracking-widest rounded-md border-gray-300 shadow-sm border p-3"
-                        placeholder="______"
+                        className="block w-full text-center text-3xl tracking-[0.5em] font-bold py-4 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852]"
+                        placeholder="000000"
                         maxLength={6}
                       />
-                      <p className="text-xs text-gray-500 mt-2">Check your email for the code</p>
+                      <p className="text-xs text-gray-500 mt-4">Please check your email inbox and spam folder.</p>
                   </div>
-                  <div className="flex space-x-4">
+                  <div className="flex gap-4">
                       <button
                         type="button"
                         onClick={() => setStep('info')}
-                        className="w-1/2 flex justify-center py-3 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        className="w-1/3 neu-btn py-3 rounded-xl text-sm font-bold text-gray-600 hover:text-[#3D4852]"
                       >
+                        <ArrowLeft className="w-4 h-4 mr-1" />
                         Back
                       </button>
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-1/2 flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                        className="w-2/3 neu-btn-primary py-3 rounded-xl text-white font-bold shadow-lg"
                       >
                         {loading ? 'Verifying...' : 'Verify OTP'}
                       </button>

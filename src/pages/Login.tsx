@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import AuthScene from '../components/AuthScene';
 import { authService } from '../services/auth';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { Mail, Lock, LogIn } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,7 +17,7 @@ const loginSchema = z.object({
 type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -34,20 +35,14 @@ const Login: React.FC = () => {
     try {
       const response = await authService.login(data);
 
-      // Extract token (handle wrapped or flat)
-      // Force cast to any to handle flexible backend response structures without TS errors
       const responseData: any = response.data || response;
       const token = responseData.token;
       const refreshToken = responseData.refreshToken || '';
 
       if (token) {
-          // Extract User
-          // Case 1: Nested { data: { user: { ... } } }
           let user = responseData.user;
           
-          // Case 2: Flat { data: { token: '...', role: 'SELLER', ... } }
           if (!user && (responseData.role || responseData.email)) {
-             // Explicitly map fields to clean User object
              user = {
                  id: responseData.id || 0,
                  email: responseData.email || data.email,
@@ -56,12 +51,10 @@ const Login: React.FC = () => {
              };
           }
 
-          // Case 3: Fallback
           if (!user) {
              user = { email: data.email, fullName: 'User', id: 0, role: 'USER' };
           }
 
-          // Normalize Role
           if (user) {
               const role = user.role ? user.role.toUpperCase() : 'USER';
               user = { ...user, role };
@@ -85,88 +78,104 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 overflow-hidden">
+    <div className="flex h-screen w-full bg-[#E0E5EC] overflow-hidden">
       {/* Left Side - 3D Scene */}
-      <div className="hidden md:block w-1/2 h-full relative bg-slate-900">
+      <div className="hidden md:block w-1/2 h-full relative bg-slate-900 rounded-r-[3rem] shadow-2xl overflow-hidden">
         <div className="absolute inset-0 z-10">
             <AuthScene />
         </div>
-        <div className="absolute bottom-10 left-10 z-20 text-white/80">
-            <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-            <p className="text-lg">Access your auctions and manage your bids.</p>
+        <div className="absolute bottom-10 left-10 z-20 text-white/90">
+            <h2 className="text-4xl font-bold mb-3 drop-shadow-md">Welcome Back</h2>
+            <p className="text-xl font-light drop-shadow-sm">Access your auctions and manage your bids with style.</p>
         </div>
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full md:w-1/2 h-full flex items-center justify-center p-8 relative z-30 flex-col">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Sign in</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Or{' '}
-              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
-                create a new account
-              </Link>
+      <div className="w-full md:w-1/2 h-full flex items-center justify-center p-8 relative z-30">
+        <div className="max-w-md w-full neu-extruded p-10 rounded-[2.5rem]">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-extrabold text-[#3D4852] tracking-tight mb-2">Sign In</h1>
+            <p className="text-sm text-gray-500 font-medium">
+              Join the auction community
             </p>
           </div>
           
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* ... fields ... */}
-            <div className="rounded-md shadow-sm -space-y-px">
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-5">
               <div>
                 <label htmlFor="email-address" className="sr-only">Email address</label>
-                <input
-                  id="email-address"
-                  type="email"
-                  autoComplete="email"
-                  {...register('email')}
-                  className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                  placeholder="Email address"
-                />
-                {errors.email && <p className="text-red-500 text-xs mt-1 px-3">{errors.email.message}</p>}
+                <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      id="email-address"
+                      type="email"
+                      {...register('email')}
+                      className={`w-full pl-12 pr-4 py-3.5 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.email ? 'border-red-500' : ''}`}
+                      placeholder="Email address"
+                    />
+                </div>
+                {errors.email && <p className="text-red-500 text-xs mt-1 ml-2">{errors.email.message}</p>}
               </div>
+
               <div>
                 <label htmlFor="password" className="sr-only">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  {...register('password')}
-                  className={`appearance-none rounded-none relative block w-full px-3 py-3 border ${errors.password ? 'border-red-500' : 'border-slate-300'} placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
-                  placeholder="Password"
-                />
-                {errors.password && <p className="text-red-500 text-xs mt-1 px-3">{errors.password.message}</p>}
+                <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      id="password"
+                      type="password"
+                      autoComplete="current-password"
+                      {...register('password')}
+                      className={`w-full pl-12 pr-4 py-3.5 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852] font-medium placeholder-gray-400 ${errors.password ? 'border-red-500' : ''}`}
+                      placeholder="Password"
+                    />
+                </div>
+                {errors.password && <p className="text-red-500 text-xs mt-1 ml-2">{errors.password.message}</p>}
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mt-4">
               <div className="flex items-center">
                 <input
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  className="h-4 w-4 text-[#6C63FF] focus:ring-[#6C63FF] border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600 font-medium">
                   Remember me
                 </label>
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                  Forgot your password?
-                </a>
+                <Link to="/forgot-password" className="font-bold text-gray-500 hover:text-[#6C63FF] transition-colors">
+                  Forgot Password?
+                </Link>
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
-              >
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full neu-btn-primary rounded-xl py-4 text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mt-6"
+            >
+              {loading ? (
+                  <span>Signing In...</span>
+              ) : (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    <span>Sign In</span>
+                  </>
+              )}
+            </button>
+            
+            <div className="mt-8 text-center">
+                <p className="text-sm text-gray-500">
+                    Don't have an account?{' '}
+                    <Link to="/register" className="font-bold text-[#6C63FF] hover:underline">
+                        Create Account
+                    </Link>
+                </p>
             </div>
           </form>
         </div>

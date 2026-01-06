@@ -105,11 +105,12 @@ export const adminService = {
     // Product Management
     getProducts: async () => {
         // Assuming admin can view all products
-        const response = await api.get<Product[]>('/products');
-        return response.data;
+        const response = await api.get<any>('/products');
+        console.log('API getProducts raw:', response.data);
+        return response.data?.data?.content || response.data?.data || [];
     },
     deleteProduct: async (id: number) => {
-        const response = await api.delete(`/products/admin/products/${id}`);
+        const response = await api.delete(`/admin/products/${id}`); // Corrected from /products/admin/products
         return response.data;
     },
 

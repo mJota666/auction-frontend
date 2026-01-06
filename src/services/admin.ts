@@ -15,7 +15,10 @@ export interface User {
     email: string;
     role: string;
     locked: boolean;
-    isUpgradeRequested?: boolean; // New field
+    isUpgradeRequested?: boolean;
+    upgradeRequestId?: number; // Map from Request ID
+    requestReason?: string;
+    requestStatus?: string;
 }
 
 export interface Category {
@@ -29,24 +32,31 @@ export interface Category {
 export const adminService = {
     // User Management
     getUsers: async () => {
-        const response = await api.get<User[]>('/admin/users');
-        return response.data;
+        const response = await api.get<any>('/admin/users');
+        // Handle Spring Data Pageable structure: data.data.content
+        return response.data?.data?.content || [];
     },
     toggleUserLock: async (userId: number) => {
         const response = await api.put(`/admin/users/${userId}/lock`);
         return response.data;
     },
     getUpgradeRequests: async () => {
-        const response = await api.get<User[]>('/admin/upgrade-requests');
+        const response = await api.get<any>('/admin/upgrade-requests');
+        const rawData = response.data?.data || [];
+        // Flatten the response: Map { user: {...}, id: requestId } -> { ...user, upgradeRequestId: requestId }
+        return Array.isArray(rawData) ? rawData.map((req: any) => ({
+            ...req.user,
+            upgradeRequestId: req.id, // Store the Request ID for approval/rejection
+            requestReason: req.reason,
+            requestStatus: req.status
+        })) : [];
+    },
+    approveUpgradeRequest: async (requestId: number) => {
+        const response = await api.post(`/admin/upgrade-requests/${requestId}/approve`);
         return response.data;
     },
-    approveUpgradeRequest: async (userId: number) => {
-        const response = await api.post(`/admin/upgrade-requests/${userId}/approve`);
-        return response.data;
-    },
-    rejectUpgradeRequest: async (userId: number, reason: string = 'Rejected by Admin') => {
-        // Using query param for reason as per guide: ?reason=...
-        const response = await api.post(`/admin/upgrade-requests/${userId}/reject`, {}, {
+    rejectUpgradeRequest: async (requestId: number, reason: string = 'Rejected by Admin') => {
+        const response = await api.post(`/admin/upgrade-requests/${requestId}/reject`, {}, {
             params: { reason }
         });
         return response.data;

@@ -29,12 +29,12 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose }) => {
             onClose();
             setReason('');
         } catch (error: any) {
-             console.error("Upgrade request failed", error);
-             if (error.response?.data?.code === 1006) {
-                 toast.info('Bạn đã gửi yêu cầu rồi, vui lòng chờ Admin duyệt');
-             } else {
-                 toast.error(error.response?.data?.message || 'Failed to send request');
-             }
+            console.error("Upgrade request failed", error);
+            if (error.response?.data?.code === 1006) {
+                toast.info('Bạn đã gửi yêu cầu rồi, vui lòng chờ Admin duyệt');
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to send request');
+            }
         } finally {
             setLoading(false);
         }

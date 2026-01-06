@@ -110,7 +110,7 @@ interface AdminContextType extends AdminState {
     // Actions
     toggleUserLock: (id: number) => Promise<void>;
     approveUpgrade: (id: number) => Promise<void>;
-    rejectUpgrade: (id: number) => Promise<void>;
+    rejectUpgrade: (id: number, reason: string) => Promise<void>;
     deleteProduct: (id: number) => Promise<void>;
     addCategory: (data: { name: string; description: string; parentId?: number | null }) => Promise<void>;
     updateCategory: (id: number, data: { name: string; description: string; parentId?: number | null }) => Promise<void>;
@@ -192,9 +192,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const rejectUpgrade = async (id: number) => {
+    const rejectUpgrade = async (id: number, reason: string) => {
         try {
-            await adminService.rejectUpgradeRequest(id);
+            await adminService.rejectUpgradeRequest(id, reason);
             dispatch({ type: 'REJECT_UPGRADE_SUCCESS', payload: id });
             toast.success('Upgrade rejected');
         } catch (error) {

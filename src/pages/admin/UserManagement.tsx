@@ -13,6 +13,14 @@ const UserManagement: React.FC = () => {
 
     if (loading && users.length === 0 && upgradeRequests.length === 0) return <div className="flex justify-center py-20 text-[#3D4852] font-medium">Loading Users...</div>;
 
+    const getRoleColor = (role: string) => {
+        switch (role) {
+            case 'ADMIN': return 'text-red-500';
+            case 'SELLER': return 'text-blue-600';
+            default: return 'text-gray-500';
+        }
+    };
+
     const renderUserList = () => {
         const list = activeTab === 'all' ? users : upgradeRequests;
         if (list.length === 0) {
@@ -51,7 +59,7 @@ const UserManagement: React.FC = () => {
                          <div className="col-span-3 text-sm text-[#555] break-all">{user.email}</div>
                          
                          <div className="col-span-2">
-                             <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-[#E0E5EC] neu-extruded text-[#6C63FF]">
+                             <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-[#E0E5EC] neu-extruded ${getRoleColor(user.role)}`}>
                                  {user.role}
                              </span>
                          </div>
@@ -67,6 +75,7 @@ const UserManagement: React.FC = () => {
 
                          <div className="col-span-2 flex justify-end gap-3">
                              {activeTab === 'all' ? (
+                                user.role !== 'ADMIN' && (
                                 <button 
                                     onClick={() => toggleUserLock(user.id)}
                                     className={`w-10 h-10 rounded-xl neu-btn flex items-center justify-center transition-colors ${
@@ -76,17 +85,21 @@ const UserManagement: React.FC = () => {
                                 >
                                     {user.locked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                                 </button>
+                                )
                              ) : (
                                  <>
                                     <button 
-                                        onClick={() => approveUpgrade(user.id)}
+                                        onClick={() => user.upgradeRequestId && approveUpgrade(user.upgradeRequestId)}
                                         className="w-10 h-10 rounded-xl neu-btn text-green-500 hover:text-green-600 flex items-center justify-center"
                                         title="Approve Upgrade"
                                     >
                                         <CheckCircle className="w-5 h-5" />
                                     </button>
                                     <button 
-                                        onClick={() => rejectUpgrade(user.id)}
+                                        onClick={() => {
+                                            const reason = window.prompt("Enter rejection reason:");
+                                            if (reason && user.upgradeRequestId) rejectUpgrade(user.upgradeRequestId, reason);
+                                        }}
                                         className="w-10 h-10 rounded-xl neu-btn text-red-500 hover:text-red-600 flex items-center justify-center"
                                         title="Reject Upgrade"
                                     >

@@ -97,11 +97,20 @@ const ForgotPassword: React.FC = () => {
                         </button>
                     </form>
                 ) : (
-                    <form onSubmit={handleResetSubmit(onResetSubmit)} className="space-y-6">
+                    <form onSubmit={handleResetSubmit(onResetSubmit)} className="space-y-6" autoComplete="off">
+                        {/* Hack: Dummy inputs to absorb browser auto-fill */}
+                        <div style={{ display: 'none' }}>
+                            <input type="text" autoComplete="username" name="fake_username_prevent_autofill" />
+                            <input type="password" autoComplete="current-password" name="fake_password_prevent_autofill" />
+                        </div>
+
                         <div>
                             <div className="relative">
                                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="off"
                                     {...registerReset('otp')}
                                     placeholder="Enter 6-digit OTP"
                                     className="w-full pl-12 pr-4 py-3 neu-inset rounded-xl bg-transparent outline-none text-[#3D4852]"

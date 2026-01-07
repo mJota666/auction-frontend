@@ -239,7 +239,10 @@ const ProductDetail: React.FC = () => {
                 return { allowed: false, reason: 'Your rating is too low (< 80%) to participate.' };
             }
         } else {
-             if (product && product.allowUnratedBidder === false) {
+             // Check both camelCase and snake_case properties
+             const isAllowed = product?.allowUnratedBidder ?? (product as any)?.allow_unrated_bidder;
+             // Only block if explicitly FALSE. If undefined/null, default to TRUE (allow).
+             if (isAllowed === false) {
                  return { allowed: false, reason: 'This seller does not allow unrated accounts.' };
              }
         }

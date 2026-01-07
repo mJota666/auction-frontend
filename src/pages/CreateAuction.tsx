@@ -27,7 +27,8 @@ const createAuctionSchema = z.object({
       })
   ).min(3, 'At least 3 additional images are required'),
   categoryId: z.coerce.number().min(1, 'Category is required'),
-  autoExtendEnabled: z.boolean().default(false)
+  autoExtendEnabled: z.boolean().default(false),
+  allowUnratedBidder: z.boolean().default(true)
 }).refine((data) => {
     if (data.buyNowPrice && data.buyNowPrice <= data.startPrice) {
         return false;
@@ -43,7 +44,7 @@ type CreateAuctionInputs = z.infer<typeof createAuctionSchema>;
 const CreateAuction: React.FC = () => {
   const navigate = useNavigate();
   // Removed explicit generic <CreateAuctionInputs> to let Zod resolver infer correct types for coerced fields
-  const { register, control, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, control, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(createAuctionSchema),
     defaultValues: {
         title: '',
@@ -55,7 +56,8 @@ const CreateAuction: React.FC = () => {
         buyNowPrice: undefined, // Explicitly undefined
         categoryId: 0,
         endAt: '', 
-        autoExtendEnabled: false
+        autoExtendEnabled: false,
+        allowUnratedBidder: true
     }
   });
 
@@ -116,11 +118,15 @@ const CreateAuction: React.FC = () => {
 
   const onSubmit = async (data: CreateAuctionInputs) => {
     try {
+        // Convert local datetime to ISO string (UTC)
+        const endAtISO = new Date(data.endAt).toISOString();
+
         const payload = {
             ...data,
-            ...data,
+            endAt: endAtISO,
             imageUrls: [data.thumbnailUrl, ...data.imageUrls.map(img => img.url)], // Merge thumbnail + additional images
-            buyNowPrice: data.buyNowPrice || undefined // Ensure undefined if 0 or empty
+            buyNowPrice: data.buyNowPrice || undefined, // Ensure undefined if 0 or empty
+            allow_unrated_bidder: data.allowUnratedBidder // Map to snake_case for Backend
         };
         // Remove thumbnailUrl from payload as backend expects just imageUrls
         delete (payload as any).thumbnailUrl;
@@ -140,203 +146,285 @@ const CreateAuction: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">Create New Auction</h1>
+    <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-extrabold text-[#3D4852] tracking-tight mb-2">Create New Auction</h1>
+        <p className="text-gray-500 font-medium">List your item and start receiving bids</p>
+      </div>
       
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white p-8 rounded-lg shadow">
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Title</label>
-          <input {...register('title')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
-          {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
-        </div>
-
-        {/* Category */}
-        <div>
-           <label className="block text-sm font-medium text-gray-700">Category</label>
-           <select {...register('categoryId')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 bg-white">
-                <option value="">Select a category</option>
-                
-                {/* Render Standalone Categories */}
-                {groupedCategories.orphans.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-
-                {/* Render Grouped Categories */}
-                {groupedCategories.groups.map(group => (
-                    <optgroup key={group.parent.id} label={group.parent.name}>
-                        {group.children.map(child => (
-                            <option key={child.id} value={child.id}>
-                                {child.name}
-                            </option>
-                        ))}
-                    </optgroup>
-                ))}
-           </select>
-           {errors.categoryId && <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>}
-        </div>
-
-        {/* Description - WYSIWYG */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-          <Controller
-            name="description"
-            control={control}
-            render={({ field }) => (
-              <ReactQuill 
-                theme="snow" 
-                value={field.value} 
-                onChange={field.onChange} 
-                className="h-64 mb-12" // Add margin bottom for toolbar
-              />
-            )}
-          />
-          {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
-        </div>
-
-        {/* Prices Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Start Price</label>
-              <Controller
-                control={control}
-                name="startPrice"
-                render={({ field: { onChange, value } }) => (
-                    <input
-                        type="text"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-                        value={formatNumber(value as number | undefined)}
-                        onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
-                            if (!isNaN(Number(rawValue))) {
-                                onChange(Number(rawValue));
-                            }
-                        }}
-                    />
-                )}
-              />
-              {errors.startPrice && <p className="text-red-500 text-xs mt-1">{errors.startPrice.message}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Step Price</label>
-               <Controller
-                control={control}
-                name="stepPrice"
-                render={({ field: { onChange, value } }) => (
-                    <input
-                        type="text"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-                        value={formatNumber(value as number | undefined)}
-                        onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
-                            if (!isNaN(Number(rawValue))) {
-                                onChange(Number(rawValue));
-                            }
-                        }}
-                    />
-                )}
-              />
-              {errors.stepPrice && <p className="text-red-500 text-xs mt-1">{errors.stepPrice.message}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Buy Now Price (Optional)</label>
-               <Controller
-                control={control}
-                name="buyNowPrice"
-                render={({ field: { onChange, value } }) => (
-                    <input
-                        type="text"
-                        placeholder="Optional"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
-                        value={formatNumber(value as number | undefined)}
-                        onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
-                            if (!rawValue) onChange(undefined);
-                            else if (!isNaN(Number(rawValue))) {
-                                onChange(Number(rawValue));
-                            }
-                        }}
-                    />
-                )}
-              />
-              {errors.buyNowPrice && <p className="text-red-500 text-xs mt-1">{errors.buyNowPrice.message}</p>}
-            </div>
-        </div>
-
-        {/* Images Section */}
-        <div className="space-y-6 border-t pt-6">
-            <h3 className="text-lg font-medium text-gray-900">Product Images</h3>
+      <form onSubmit={handleSubmit(onSubmit)} className="neu-extruded rounded-[2.5rem] p-8 md:p-12 space-y-10">
+        
+        {/* Basic Info Section */}
+        <div className="space-y-6">
+            <h2 className="text-xl font-bold text-[#3D4852] flex items-center gap-2 border-b border-gray-200/50 pb-2">
+                <span className="w-1.5 h-6 bg-[#6C63FF] rounded-full"></span>
+                Basic Information
+            </h2>
             
-            {/* Main Image (Thumbnail) */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Main Image (Thumbnail)</label>
+            {/* Title */}
+            <div className="space-y-2">
+                <label className="text-sm font-bold text-[#3D4852] ml-1">Product Title</label>
                 <input 
-                    {...register('thumbnailUrl')} 
-                    placeholder="Enter URL for the main display image"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" 
+                    {...register('title')} 
+                    className={`w-full px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all placeholder-gray-400 font-medium ${errors.title ? 'ring-2 ring-red-500/50' : ''}`}
+                    placeholder="e.g. Vintage Camera Lens 50mm"
                 />
-                {errors.thumbnailUrl && <p className="text-red-500 text-xs mt-1">{errors.thumbnailUrl.message}</p>}
-                {/* Preview Thumbnail */}
-                {/* We won't implement preview logic complexly here, but just input for now. */}
+                {errors.title && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.title.message}</p>}
             </div>
 
-            {/* Additional Images */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Additional Images (Min 3)</label>
+            {/* Category */}
+            <div className="space-y-2">
+                <label className="text-sm font-bold text-[#3D4852] ml-1">Category</label>
+                <div className="relative">
+                    <select 
+                        {...register('categoryId')} 
+                        className={`w-full px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all appearance-none cursor-pointer font-medium bg-transparent ${errors.categoryId ? 'ring-2 ring-red-500/50' : ''}`}
+                    >
+                        <option value="">Select a category...</option>
+                        {groupedCategories.orphans.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                        {groupedCategories.groups.map(group => (
+                            <optgroup key={group.parent.id} label={group.parent.name}>
+                                {group.children.map(child => (
+                                    <option key={child.id} value={child.id}>{child.name}</option>
+                                ))}
+                            </optgroup>
+                        ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                </div>
+                {errors.categoryId && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.categoryId.message}</p>}
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+                <label className="text-sm font-bold text-[#3D4852] ml-1">Description</label>
+                <div className="neu-inset rounded-xl p-2 bg-transparent">
+                    <Controller
+                        name="description"
+                        control={control}
+                        render={({ field }) => (
+                        <ReactQuill 
+                            theme="snow" 
+                            value={field.value} 
+                            onChange={field.onChange} 
+                            className="h-64 mb-12"
+                            modules={{
+                                toolbar: [
+                                    [{ 'header': [1, 2, false] }],
+                                    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+                                    [{'list': 'ordered'}, {'list': 'bullet'}],
+                                    ['link'],
+                                    ['clean']
+                                ],
+                            }}
+                        />
+                        )}
+                    />
+                </div>
+                {errors.description && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.description.message}</p>}
+            </div>
+        </div>
+
+        {/* Pricing Section */}
+        <div className="space-y-6 pt-4">
+            <h2 className="text-xl font-bold text-[#3D4852] flex items-center gap-2 border-b border-gray-200/50 pb-2">
+                <span className="w-1.5 h-6 bg-[#6C63FF] rounded-full"></span>
+                Pricing & Timing
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="space-y-2">
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="flex gap-2">
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">Start Price</label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₫</span>
+                        <Controller
+                            control={control}
+                            name="startPrice"
+                            render={({ field: { onChange, value } }) => (
+                                <input
+                                    type="text"
+                                    className="w-full pl-8 pr-5 py-3.5 neu-inset rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all text-right"
+                                    placeholder="0"
+                                    value={formatNumber(value as number | undefined)}
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
+                                        if (!isNaN(Number(rawValue))) onChange(Number(rawValue));
+                                    }}
+                                />
+                            )}
+                        />
+                    </div>
+                    {errors.startPrice && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.startPrice.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">Step Price</label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₫</span>
+                        <Controller
+                            control={control}
+                            name="stepPrice"
+                            render={({ field: { onChange, value } }) => (
+                                <input
+                                    type="text"
+                                    className="w-full pl-8 pr-5 py-3.5 neu-inset rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all text-right"
+                                    placeholder="0"
+                                    value={formatNumber(value as number | undefined)}
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
+                                        if (!isNaN(Number(rawValue))) onChange(Number(rawValue));
+                                    }}
+                                />
+                            )}
+                        />
+                    </div>
+                    {errors.stepPrice && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.stepPrice.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">Buy Now Price <span className="text-gray-400 font-normal text-xs ml-1">(Optional)</span></label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₫</span>
+                        <Controller
+                            control={control}
+                            name="buyNowPrice"
+                            render={({ field: { onChange, value } }) => (
+                                <input
+                                    type="text"
+                                    placeholder="Optional"
+                                    className="w-full pl-8 pr-5 py-3.5 neu-inset rounded-xl text-[#3D4852] font-bold focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all text-right"
+                                    value={formatNumber(value as number | undefined)}
+                                    onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '');
+                                        if (!rawValue) onChange(undefined);
+                                        else if (!isNaN(Number(rawValue))) onChange(Number(rawValue));
+                                    }}
+                                />
+                            )}
+                        />
+                    </div>
+                    {errors.buyNowPrice && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.buyNowPrice.message}</p>}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">End Time</label>
+                    <input 
+                        type="datetime-local" 
+                        {...register('endAt')} 
+                        className="w-full px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] font-medium focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all"
+                    />
+                    {errors.endAt && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.endAt.message}</p>}
+                </div>
+
+                <div className="space-y-4 pt-8">
+                    {/* Auto Extend Toggle */}
+                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => {
+                        const current = watch('autoExtendEnabled');
+                        setValue('autoExtendEnabled', !current);
+                    }}>
+                        <div className="relative flex items-center">
                             <input
+                                id="autoExtendEnabled"
+                                type="checkbox"
+                                {...register('autoExtendEnabled')}
+                                className="peer h-6 w-11 rounded-full bg-gray-200 border-none appearance-none cursor-pointer transition-colors checked:bg-[#6C63FF] focus:ring-2 focus:ring-[#6C63FF]/30"
+                            />
+                            <div className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 peer-checked:translate-x-5"></div>
+                        </div>
+                        <div>
+                            <label htmlFor="autoExtendEnabled" className="block text-sm font-bold text-[#3D4852] cursor-pointer group-hover:text-[#6C63FF] transition-colors">Auto-Extension</label>
+                            <p className="text-xs text-gray-500 font-medium">Extend by 5 mins if bid placed near end.</p>
+                        </div>
+                    </div>
+
+                    {/* Unrated Bidder Toggle */}
+                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => {
+                        const current = watch('allowUnratedBidder');
+                        setValue('allowUnratedBidder', !current);
+                    }}>
+                        <div className="relative flex items-center">
+                            <input
+                                id="allowUnratedBidder"
+                                type="checkbox"
+                                {...register('allowUnratedBidder')}
+                                className="peer h-6 w-11 rounded-full bg-gray-200 border-none appearance-none cursor-pointer transition-colors checked:bg-[#6C63FF] focus:ring-2 focus:ring-[#6C63FF]/30"
+                            />
+                            <div className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 peer-checked:translate-x-5"></div>
+                        </div>
+                        <div>
+                            <label htmlFor="allowUnratedBidder" className="block text-sm font-bold text-[#3D4852] cursor-pointer group-hover:text-[#6C63FF] transition-colors">Allow New Bidders</label>
+                            <p className="text-xs text-gray-500 font-medium">Allow users with no rating history to bid.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* Media Section */}
+        <div className="space-y-6 pt-4">
+            <h2 className="text-xl font-bold text-[#3D4852] flex items-center gap-2 border-b border-gray-200/50 pb-2">
+                <span className="w-1.5 h-6 bg-[#6C63FF] rounded-full"></span>
+                Product Images
+            </h2>
+
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">Main Thumbnail URL</label>
+                    <input 
+                        {...register('thumbnailUrl')} 
+                        placeholder="https://example.com/main-image.jpg"
+                        className="w-full px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-medium placeholder-gray-400" 
+                    />
+                    {errors.thumbnailUrl && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.thumbnailUrl.message}</p>}
+                </div>
+
+                <div className="space-y-3">
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">Gallery Images <span className="text-gray-400 font-normal text-xs ml-1">(Min 3)</span></label>
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="flex gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
+                             <input
                                 {...register(`imageUrls.${index}.url`)}
-                                placeholder={`Additional Image URL ${index + 1}`}
-                                className="flex-1 block w-full rounded-md border-gray-300 shadow-sm border p-2"
+                                placeholder={`Image URL #${index + 1}`}
+                                className="flex-1 px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-medium placeholder-gray-400"
                             />
                             {index > 2 && (
-                                <button type="button" onClick={() => remove(index)} className="text-red-600 hover:text-red-800">
-                                    Remove
+                                <button type="button" onClick={() => remove(index)} className="neu-btn p-3.5 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-1 1-1h6c1 0 1 1 1 1v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                                 </button>
                             )}
                         </div>
                     ))}
+                    <button
+                        type="button"
+                        onClick={() => append({ url: '' })}
+                        className="mt-2 text-sm font-bold text-[#6C63FF] hover:text-[#5a52d5] flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[#6C63FF]/10 transition-all w-fit"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+                        Add Another Image
+                    </button>
+                    {errors.imageUrls && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.imageUrls.message}</p>}
                 </div>
-                <button
-                    type="button"
-                    onClick={() => append({ url: '' })}
-                    className="mt-2 text-sm text-indigo-600 hover:text-indigo-800"
-                >
-                    + Add another image
-                </button>
-                {errors.imageUrls && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.message}</p>}
-                {errors.imageUrls?.root && <p className="text-red-500 text-xs mt-1">{errors.imageUrls.root.message}</p>}
             </div>
         </div>
 
-        {/* End Date & Auto Extend */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-             <div>
-               <label className="block text-sm font-medium text-gray-700">End Date</label>
-               <input type="datetime-local" {...register('endAt')} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" />
-               {errors.endAt && <p className="text-red-500 text-xs mt-1">{errors.endAt.message}</p>}
-            </div>
-            
-            <div className="flex items-center pb-3">
-                <input
-                    id="autoExtendEnabled"
-                    type="checkbox"
-                    {...register('autoExtendEnabled')}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label htmlFor="autoExtendEnabled" className="ml-2 block text-sm text-gray-900">
-                    Auto-extend auction if bid placed in last 5 mins?
-                </label>
-            </div>
-        </div>
-
-        <div className="pt-4">
-          <button type="submit" disabled={isSubmitting} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            {isSubmitting ? 'Creating...' : 'Create Auction'}
+        <div className="pt-8 border-t border-gray-200/50">
+          <button 
+            type="submit" 
+            disabled={isSubmitting} 
+            className="w-full neu-btn-primary py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0"
+          >
+            {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Processing...
+                </span>
+            ) : 'Launch Auction'}
           </button>
         </div>
       </form>

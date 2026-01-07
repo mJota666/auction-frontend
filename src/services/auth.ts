@@ -109,8 +109,8 @@ export const authService = {
     },
     // Rating Features
     getRatings: async (userId?: number) => {
-        // If userId is provided, get that user's ratings. Else get own.
-        const url = userId ? `/users/${userId}/ratings` : '/users/me/ratings';
+        // If userId is provided, get that user's ratings. Else get own via new API.
+        const url = userId ? `/users/${userId}/ratings` : '/ratings/my-ratings';
         const response = await api.get(url);
         return response.data && response.data.data ? response.data.data : response.data;
     },

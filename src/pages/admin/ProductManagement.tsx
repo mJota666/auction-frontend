@@ -87,6 +87,7 @@ const ProductManagement: React.FC = () => {
                                 </div>
 
                                 <div className="col-span-1 flex justify-end">
+                                    {product.status !== 'REMOVED' && (
                                     <button 
                                         onClick={() => handleDeleteClick(product.id)}
                                         className="w-10 h-10 rounded-xl neu-btn text-red-500 hover:text-red-600 flex items-center justify-center transition-all hover:scale-105"
@@ -94,6 +95,7 @@ const ProductManagement: React.FC = () => {
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

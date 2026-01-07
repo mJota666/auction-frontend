@@ -22,7 +22,7 @@ export interface Product {
     sellerRatingPositive?: number; // Added based on BE feedback
     sellerRatingNegative?: number; // Added based on BE feedback
     allowUnratedBidder?: boolean; // Updated based on Backend Guide
-    status: 'ACTIVE' | 'SOLD' | 'EXPIRED';
+    status: 'ACTIVE' | 'SOLD' | 'EXPIRED' | 'DRAFT' | 'REMOVED' | 'UNSOLD';
 }
 
 export interface Question {

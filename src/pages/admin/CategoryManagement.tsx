@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Trash2, Plus, Edit2, Folder, CornerDownRight } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const CategoryManagement: React.FC = () => {
     const { categories, loading, fetchCategories, addCategory, updateCategory, deleteCategory } = useAdmin();
@@ -49,6 +50,21 @@ const CategoryManagement: React.FC = () => {
     const getChildren = (parentId: number) => categories.filter(c => c.parentId === parentId);
 
     if (loading && categories.length === 0) return <div className="flex justify-center py-20">Loading...</div>;
+
+    const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+    const [categoryToDelete, setCategoryToDelete] = React.useState<number | null>(null);
+
+    const confirmDelete = (id: number) => {
+        setCategoryToDelete(id);
+        setDeleteModalOpen(true);
+    };
+
+    const handleDelete = () => {
+        if (categoryToDelete) {
+            deleteCategory(categoryToDelete);
+            setCategoryToDelete(null);
+        }
+    };
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -127,7 +143,7 @@ const CategoryManagement: React.FC = () => {
                                         <button onClick={() => handleEdit(root)} className="w-10 h-10 rounded-xl neu-btn text-indigo-500 hover:text-indigo-600 flex items-center justify-center">
                                             <Edit2 className="w-5 h-5" />
                                         </button>
-                                        <button onClick={() => deleteCategory(root.id)} className="w-10 h-10 rounded-xl neu-btn text-red-500 hover:text-red-600 flex items-center justify-center">
+                                        <button onClick={() => confirmDelete(root.id)} className="w-10 h-10 rounded-xl neu-btn text-red-500 hover:text-red-600 flex items-center justify-center">
                                             <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
@@ -149,7 +165,7 @@ const CategoryManagement: React.FC = () => {
                                                     <button onClick={() => handleEdit(child)} className="w-8 h-8 rounded-lg neu-btn text-indigo-500 hover:text-indigo-600 flex items-center justify-center">
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
-                                                    <button onClick={() => deleteCategory(child.id)} className="w-8 h-8 rounded-lg neu-btn text-red-500 hover:text-red-600 flex items-center justify-center">
+                                                    <button onClick={() => confirmDelete(child.id)} className="w-8 h-8 rounded-lg neu-btn text-red-500 hover:text-red-600 flex items-center justify-center">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
@@ -168,6 +184,16 @@ const CategoryManagement: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleDelete}
+                title="Delete Category"
+                message="Are you sure you want to delete this category? Products in this category might be affected."
+                confirmText="Delete"
+                variant="danger"
+            />
         </div>
     );
 };

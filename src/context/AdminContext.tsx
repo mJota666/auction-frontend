@@ -210,7 +210,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const deleteProduct = async (id: number) => {
-        if (!window.confirm('Are you sure you want to delete this product?')) return;
         try {
             await adminService.deleteProduct(id);
             dispatch({ type: 'DELETE_PRODUCT_SUCCESS', payload: id });
@@ -241,7 +240,6 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const deleteCategory = async (id: number) => {
-        if (!window.confirm('Are you sure? Products in this category might be affected.')) return;
         try {
             await adminService.deleteCategory(id);
             dispatch({ type: 'DELETE_CATEGORY_SUCCESS', payload: id });

@@ -1,13 +1,28 @@
 import React, { useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Trash2, Package } from 'lucide-react';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ProductManagement: React.FC = () => {
     const { products, loading, error, fetchProducts, deleteProduct } = useAdmin();
+    const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+    const [productToDelete, setProductToDelete] = React.useState<number | null>(null);
 
     useEffect(() => {
         fetchProducts();
     }, []);
+
+    const handleDeleteClick = (id: number) => {
+        setProductToDelete(id);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (productToDelete) {
+            deleteProduct(productToDelete);
+            setProductToDelete(null);
+        }
+    };
 
     if (loading && products.length === 0) return <div className="flex justify-center py-20 text-[#3D4852] font-medium">Loading Products...</div>;
     if (error) return <div className="text-red-500 text-center py-20 font-bold">{error}</div>;
@@ -73,7 +88,7 @@ const ProductManagement: React.FC = () => {
 
                                 <div className="col-span-1 flex justify-end">
                                     <button 
-                                        onClick={() => deleteProduct(product.id)}
+                                        onClick={() => handleDeleteClick(product.id)}
                                         className="w-10 h-10 rounded-xl neu-btn text-red-500 hover:text-red-600 flex items-center justify-center transition-all hover:scale-105"
                                         title="Delete Product"
                                     >
@@ -85,6 +100,16 @@ const ProductManagement: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Product"
+                message="Are you sure you want to delete this product? This action cannot be undone."
+                confirmText="Delete"
+                variant="danger"
+            />
         </div>
     );
 };

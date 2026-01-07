@@ -62,18 +62,25 @@ const adminReducer = (state: AdminState, action: Action): AdminState => {
                 ...state,
                 users: state.users.map(u => u.id === action.payload ? { ...u, locked: !u.locked } : u)
             };
-        case 'APPROVE_UPGRADE_SUCCESS':
-            // Remove from requests, update in users list logic could be complex if lists are separate
+        case 'APPROVE_UPGRADE_SUCCESS': {
+            // Find the user ID from the request being approved
+            const legacyUserValues = state.upgradeRequests.find(u => u.upgradeRequestId === action.payload);
+            const userIdToPromote = legacyUserValues ? legacyUserValues.id : null;
+            
             return {
                 ...state,
-                upgradeRequests: state.upgradeRequests.filter(u => u.id !== action.payload),
-                // Optionally update the user in the main list if present
-                users: state.users.map(u => u.id === action.payload ? { ...u, role: 'SELLER' } : u) 
+                // Remove by Upgrade Request ID
+                upgradeRequests: state.upgradeRequests.filter(u => u.upgradeRequestId !== action.payload),
+                // Update User Role in the main list
+                users: userIdToPromote 
+                    ? state.users.map(u => u.id === userIdToPromote ? { ...u, role: 'SELLER' } : u) 
+                    : state.users
             };
+        }
         case 'REJECT_UPGRADE_SUCCESS':
             return {
                 ...state,
-                upgradeRequests: state.upgradeRequests.filter(u => u.id !== action.payload)
+                upgradeRequests: state.upgradeRequests.filter(u => u.upgradeRequestId !== action.payload)
             };
         case 'DELETE_PRODUCT_SUCCESS':
             return {

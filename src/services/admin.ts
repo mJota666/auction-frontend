@@ -104,9 +104,12 @@ export const adminService = {
 
     // Product Management
     getProducts: async () => {
-        // Assuming admin can view all products
-        const response = await api.get<any>('/products');
+        // Use Admin endpoint to see ALL products (Active, Sold, Hidden...) with new param
+        const response = await api.get<any>('/admin/products', {
+            params: { includeAllStatuses: true }
+        });
         console.log('API getProducts raw:', response.data);
+        // Fallback for Pageable or List
         return response.data?.data?.content || response.data?.data || [];
     },
     deleteProduct: async (id: number) => {

@@ -1,15 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { Lock, Unlock, CheckCircle, XCircle, User as UserIcon } from 'lucide-react';
+import { ApproveModal, RejectModal } from '../../components/admin/AdminUpgradeModals';
 
 const UserManagement: React.FC = () => {
     const { users, upgradeRequests, loading, fetchUsers, fetchUpgradeRequests, toggleUserLock, approveUpgrade, rejectUpgrade } = useAdmin();
     const [activeTab, setActiveTab] = useState<'all' | 'requests'>('all');
+    const [selectedUser, setSelectedUser] = useState<{ id: number; name: string; requestId?: number } | null>(null);
+    const [modalType, setModalType] = useState<'approve' | 'reject' | null>(null);
+
+    const handleOpenApprove = (user: any) => {
+        if (!user.upgradeRequestId) return;
+        setSelectedUser({ id: user.id, name: user.fullName, requestId: user.upgradeRequestId });
+        setModalType('approve');
+    };
+
+    const handleOpenReject = (user: any) => {
+        if (!user.upgradeRequestId) return;
+        setSelectedUser({ id: user.id, name: user.fullName, requestId: user.upgradeRequestId });
+        setModalType('reject');
+    };
+
+    const handleConfirmApprove = async () => {
+        if (selectedUser?.requestId) {
+            await approveUpgrade(selectedUser.requestId);
+            setModalType(null);
+            setSelectedUser(null);
+        }
+    };
+
+    const handleConfirmReject = async (reason?: string) => {
+        if (selectedUser?.requestId && reason) {
+            await rejectUpgrade(selectedUser.requestId, reason);
+            setModalType(null);
+            setSelectedUser(null);
+        }
+    };
 
     useEffect(() => {
-        if (activeTab === 'all') fetchUsers();
-        if (activeTab === 'requests') fetchUpgradeRequests();
-    }, [activeTab]);
+        fetchUsers();
+        fetchUpgradeRequests(); // Fetch immediately to show badge count
+    }, []); // Run once on mount
 
     if (loading && users.length === 0 && upgradeRequests.length === 0) return <div className="flex justify-center py-20 text-[#3D4852] font-medium">Loading Users...</div>;
 
@@ -89,17 +120,14 @@ const UserManagement: React.FC = () => {
                              ) : (
                                  <>
                                     <button 
-                                        onClick={() => user.upgradeRequestId && approveUpgrade(user.upgradeRequestId)}
+                                        onClick={() => handleOpenApprove(user)}
                                         className="w-10 h-10 rounded-xl neu-btn text-green-500 hover:text-green-600 flex items-center justify-center"
                                         title="Approve Upgrade"
                                     >
                                         <CheckCircle className="w-5 h-5" />
                                     </button>
                                     <button 
-                                        onClick={() => {
-                                            const reason = window.prompt("Enter rejection reason:");
-                                            if (reason && user.upgradeRequestId) rejectUpgrade(user.upgradeRequestId, reason);
-                                        }}
+                                        onClick={() => handleOpenReject(user)}
                                         className="w-10 h-10 rounded-xl neu-btn text-red-500 hover:text-red-600 flex items-center justify-center"
                                         title="Reject Upgrade"
                                     >
@@ -113,6 +141,10 @@ const UserManagement: React.FC = () => {
             </div>
         );
     };
+
+
+
+    // ... (rest of renderUserList)
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -157,6 +189,19 @@ const UserManagement: React.FC = () => {
             <div className="neu-extruded rounded-[2.5rem] p-8 md:p-10 bg-[#E0E5EC]">
                 {renderUserList()}
             </div>
+
+            <ApproveModal 
+                isOpen={modalType === 'approve'} 
+                onClose={() => setModalType(null)} 
+                onConfirm={handleConfirmApprove} 
+                userName={selectedUser?.name} 
+            />
+            <RejectModal 
+                isOpen={modalType === 'reject'} 
+                onClose={() => setModalType(null)} 
+                onConfirm={handleConfirmReject} 
+                userName={selectedUser?.name} 
+            />
         </div>
     );
 };

@@ -57,6 +57,26 @@ const ProductDetail: React.FC = () => {
     useEffect(() => {
         if (id) {
             fetchProductData(id);
+
+            // Real-time Updates via SSE
+            // Use relative path to leverage Vite proxy (or same-origin in production)
+            const eventSource = new EventSource(`/api/v1/streams/products/${id}`);
+            
+            eventSource.addEventListener('product-update', (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Real-time update received:', data);
+                // Refresh data to ensure price and bid history are in sync
+                fetchProductData(id);
+            });
+
+            eventSource.onerror = (err) => {
+                console.error('SSE connection error:', err);
+                eventSource.close();
+            };
+
+            return () => {
+                eventSource.close();
+            };
         }
     }, [id]);
 

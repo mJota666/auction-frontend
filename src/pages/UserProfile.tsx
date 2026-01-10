@@ -149,6 +149,9 @@ const UserProfile: React.FC = () => {
                                 </div>
                                 <p className="font-bold text-[#3D4852] text-lg text-center truncate w-full">{user?.fullName}</p>
                                 <p className="text-xs text-gray-500 font-medium truncate">{user?.email}</p>
+                                <div className="mt-2 px-3 py-1 bg-gray-100 rounded-lg">
+                                    <span className="text-xs font-bold text-[#6C63FF] uppercase tracking-wider">{user?.role}</span>
+                                </div>
                             </div>
                             
                             <nav className="space-y-3">

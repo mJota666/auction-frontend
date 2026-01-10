@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import type { Category } from '../services/admin';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css'; // Import styles
+import { ImageUpload } from '../components/common/ImageUpload';
 
 const createAuctionSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -375,39 +376,67 @@ const CreateAuction: React.FC = () => {
 
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#3D4852] ml-1">Main Thumbnail URL</label>
-                    <input 
-                        {...register('thumbnailUrl')} 
-                        placeholder="https://example.com/main-image.jpg"
-                        className="w-full px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-medium placeholder-gray-400" 
-                    />
+                    <label className="text-sm font-bold text-[#3D4852] ml-1">Main Thumbnail</label>
+                    <div className="neu-inset rounded-[1.5rem] p-4 bg-gray-50/50">
+                        <Controller
+                            control={control}
+                            name="thumbnailUrl"
+                            render={({ field: { onChange, value } }) => (
+                                <ImageUpload
+                                    value={value}
+                                    onChange={onChange}
+                                    placeholder="Upload Main Thumbnail"
+                                    className="h-64"
+                                />
+                            )}
+                        />
+                    </div>
                     {errors.thumbnailUrl && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.thumbnailUrl.message}</p>}
                 </div>
 
                 <div className="space-y-3">
                     <label className="text-sm font-bold text-[#3D4852] ml-1">Gallery Images <span className="text-gray-400 font-normal text-xs ml-1">(Min 3)</span></label>
-                    {fields.map((field, index) => (
-                        <div key={field.id} className="flex gap-3 animate-in fade-in slide-in-from-left-4 duration-300">
-                             <input
-                                {...register(`imageUrls.${index}.url`)}
-                                placeholder={`Image URL #${index + 1}`}
-                                className="flex-1 px-5 py-3.5 neu-inset rounded-xl text-[#3D4852] focus:outline-none focus:ring-2 focus:ring-[#6C63FF]/30 transition-all font-medium placeholder-gray-400"
-                            />
-                            {index > 2 && (
-                                <button type="button" onClick={() => remove(index)} className="neu-btn p-3.5 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 transition-all">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-1 1-1h6c1 0 1 1 1 1v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    <button
-                        type="button"
-                        onClick={() => append({ url: '' })}
-                        className="mt-2 text-sm font-bold text-[#6C63FF] hover:text-[#5a52d5] flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[#6C63FF]/10 transition-all w-fit"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
-                        Add Another Image
-                    </button>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {fields.map((field, index) => (
+                            <div key={field.id} className="relative group animate-in fade-in zoom-in duration-300">
+                                <Controller
+                                    control={control}
+                                    name={`imageUrls.${index}.url`}
+                                    render={({ field: { onChange, value } }) => (
+                                        <div className="h-40 w-full">
+                                            <ImageUpload
+                                                value={value}
+                                                onChange={onChange}
+                                                placeholder={`Image ${index + 1}`}
+                                                className="h-full rounded-xl"
+                                            />
+                                        </div>
+                                    )}
+                                />
+                                {index > 2 && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => remove(index)} 
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors z-10"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        
+                        <button
+                            type="button"
+                            onClick={() => append({ url: '' })}
+                            className="h-40 neu-btn border-2 border-dashed border-[#6C63FF]/30 hover:border-[#6C63FF] rounded-xl flex flex-col items-center justify-center gap-2 text-[#6C63FF] transition-all hover:bg-[#6C63FF]/5"
+                        >
+                            <div className="p-2 bg-[#6C63FF]/10 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                            </div>
+                            <span className="text-sm font-bold">Add Image</span>
+                        </button>
+                    </div>
                     {errors.imageUrls && <p className="text-red-500 text-xs ml-1 font-semibold">{errors.imageUrls.message}</p>}
                 </div>
             </div>

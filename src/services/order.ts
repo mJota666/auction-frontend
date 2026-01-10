@@ -2,7 +2,9 @@ import api from './api';
 
 export const OrderStatus = {
     PENDING_PAYMENT: 'PENDING_PAYMENT',
+    PAID: 'PAID', // New status for Payment Proof
     PREPARING: 'PREPARING',
+    SHIPPED: 'SHIPPED', // New status for Shipping Proof
     DELIVERING: 'DELIVERING',
     COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED'
@@ -32,6 +34,16 @@ export const orderService = {
     getMySales: async () => {
         const response = await api.get('/orders/my-sales');
         return response.data; // Expecting Order[]
+    },
+
+    async uploadPaymentProof(orderId: number, proofUrl: string) {
+        const response = await api.post(`/orders/${orderId}/payment-proof`, { proofUrl });
+        return response.data;
+    },
+
+    async uploadShippingProof(orderId: number, proofUrl: string) {
+        const response = await api.post(`/orders/${orderId}/shipping-proof`, { proofUrl });
+        return response.data;
     },
 
     getOrder: async (id: number | string) => {

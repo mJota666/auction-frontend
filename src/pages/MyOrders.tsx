@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { orderService, type Order, OrderStatus } from '../services/order'; // Fixed import to use types
 import { Link } from 'react-router-dom';
-import { CreditCard, Star } from 'lucide-react';
+import { CreditCard, Star, Upload } from 'lucide-react';
 import RatingModal from '../components/RatingModal';
+import { ProofUploadModal } from '../components/order/ProofUploadModal';
 
 const MyOrders: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [ratingData, setRatingData] = useState<{ isOpen: boolean; targetUserId: number; targetUserName: string; orderId: number } | null>(null);
+    const [uploadData, setUploadData] = useState<{ isOpen: boolean; orderId: number } | null>(null);
 
     useEffect(() => {
         fetchOrders();
@@ -27,7 +29,9 @@ const MyOrders: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     const getStatusColor = (status: OrderStatus) => {
         switch (status) {
             case OrderStatus.PENDING_PAYMENT: return 'bg-yellow-100 text-yellow-800';
+            case OrderStatus.PAID: return 'bg-purple-100 text-purple-800';
             case OrderStatus.PREPARING: return 'bg-blue-100 text-blue-800';
+            case OrderStatus.SHIPPED:
             case OrderStatus.DELIVERING: return 'bg-indigo-100 text-indigo-800';
             case OrderStatus.COMPLETED: return 'bg-green-100 text-green-800';
             case OrderStatus.CANCELLED: return 'bg-red-100 text-red-800';
@@ -75,9 +79,17 @@ const MyOrders: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                                     
                                     <div className="flex gap-3 mt-auto">
                                         {order.status === OrderStatus.PENDING_PAYMENT && (
-                                            <Link to={`/checkout/${order.id}`} className="neu-btn px-6 py-2 rounded-xl text-white bg-[#6C63FF] font-bold text-sm flex items-center">
-                                                <CreditCard className="w-4 h-4 mr-2" /> Pay Now
-                                            </Link>
+                                            <>
+                                                <button
+                                                    onClick={() => setUploadData({ isOpen: true, orderId: order.id })}
+                                                    className="neu-btn px-4 py-2 rounded-xl text-white bg-green-500 font-bold text-sm flex items-center hover:bg-green-600 transition-colors"
+                                                >
+                                                    <Upload className="w-4 h-4 mr-2" /> Upload Proof
+                                                </button>
+                                                <Link to={`/checkout/${order.id}`} className="neu-btn px-4 py-2 rounded-xl text-white bg-[#6C63FF] font-bold text-sm flex items-center hover:bg-[#5a52d5] transition-colors">
+                                                    <CreditCard className="w-4 h-4 mr-2" /> Pay
+                                                </Link>
+                                            </>
                                         )}
                                         {order.status === OrderStatus.DELIVERING && (
                                             <button className="neu-btn px-6 py-2 rounded-xl text-[#3D4852] font-bold text-sm">
@@ -119,6 +131,19 @@ const MyOrders: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     onSuccess={() => {
                         // Optionally refresh orders or just close
                         setRatingData(null);
+                    }}
+                />
+            )}
+
+            {uploadData && (
+                <ProofUploadModal
+                    isOpen={uploadData.isOpen}
+                    onClose={() => setUploadData(null)}
+                    customTitle="Upload Payment Proof"
+                    customMessage="Please upload your bank transfer receipt (Bill/Screenshot)."
+                    onConfirm={async (url) => {
+                        await orderService.uploadPaymentProof(uploadData.orderId, url);
+                        fetchOrders(); // Refresh status
                     }}
                 />
             )}

@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { orderService, type Order, OrderStatus } from '../services/order';
 import { toast } from 'react-toastify';
-import { Truck, Check, Star, XCircle } from 'lucide-react';
+import { Check, Star, XCircle, Upload } from 'lucide-react';
 import RatingModal from '../components/RatingModal';
+import { ProofUploadModal } from '../components/order/ProofUploadModal';
 
 const MySales: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [ratingData, setRatingData] = useState<{ isOpen: boolean; targetUserId: number; targetUserName: string; orderId: number; isCancellation?: boolean } | null>(null);
+    const [uploadData, setUploadData] = useState<{ isOpen: boolean; orderId: number } | null>(null);
 
     useEffect(() => {
         fetchSales();
@@ -51,7 +53,9 @@ const MySales: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
     const getStatusColor = (status: OrderStatus) => {
          switch (status) {
             case OrderStatus.PENDING_PAYMENT: return 'bg-yellow-100 text-yellow-800';
+            case OrderStatus.PAID: return 'bg-purple-100 text-purple-800';
             case OrderStatus.PREPARING: return 'bg-blue-100 text-blue-800';
+            case OrderStatus.SHIPPED:
             case OrderStatus.DELIVERING: return 'bg-indigo-100 text-indigo-800';
             case OrderStatus.COMPLETED: return 'bg-green-100 text-green-800';
             case OrderStatus.CANCELLED: return 'bg-red-100 text-red-800';
@@ -97,15 +101,16 @@ const MySales: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                                                 Waiting for payment
                                             </span>
                                         )}
-                                        {order.status === OrderStatus.PREPARING && (
+                                        {/* Show Upload Shipping Proof if status is PAID or PREPARING */}
+                                        {(order.status === OrderStatus.PAID || order.status === OrderStatus.PREPARING) && (
                                             <button 
-                                                onClick={() => updateStatus(order.id, OrderStatus.DELIVERING)}
+                                                onClick={() => setUploadData({ isOpen: true, orderId: order.id })}
                                                 className="neu-btn px-4 py-2 rounded-xl text-white bg-[#6C63FF] text-xs font-bold flex items-center hover:bg-[#5a52d5]"
                                             >
-                                                <Truck className="w-3 h-3 mr-1.5" /> Start Delivery
+                                                <Upload className="w-3 h-3 mr-1.5" /> Confirm Shipping
                                             </button>
                                         )}
-                                        {order.status === OrderStatus.DELIVERING && (
+                                        {(order.status === OrderStatus.DELIVERING || order.status === OrderStatus.SHIPPED) && (
                                              <button 
                                                 onClick={() => updateStatus(order.id, OrderStatus.COMPLETED)}
                                                 className="neu-btn px-4 py-2 rounded-xl text-white bg-green-500 text-xs font-bold flex items-center hover:bg-green-600"
@@ -156,6 +161,19 @@ const MySales: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                     onSuccess={() => {
                         fetchSales(); // Refresh list to see updated status
                         setRatingData(null);
+                    }}
+                />
+            )}
+
+            {uploadData && (
+                <ProofUploadModal
+                    isOpen={uploadData.isOpen}
+                    onClose={() => setUploadData(null)}
+                    customTitle="Upload Shipping Proof"
+                    customMessage="Please upload your Waybill/Tracking Slip."
+                    onConfirm={async (url) => {
+                        await orderService.uploadShippingProof(uploadData.orderId, url);
+                        fetchSales(); // Refresh status
                     }}
                 />
             )}

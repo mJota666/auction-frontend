@@ -31,13 +31,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState<number[]>([]);
 
+  const fetchUserProfile = async () => {
+    try {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) return;
+
+      const response = await authService.getProfile();
+      // Handle potential response wrapping (response.data or direct response)
+      // Based on authService, getProfile returns response.data
+      const userData = response.data || response;
+
+      if (userData && userData.id) {
+        // Update state
+        setUser(userData);
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile on init', error);
+      // If 401, potentially force logout, but for now just log
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     
-    if (storedToken && storedUser) {
+    if (storedToken) {
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+      
+      // Always sync profile with server to get latest role/status
+      fetchUserProfile();
+      
       // Fetch favorites if logged in
       fetchFavorites();
     }

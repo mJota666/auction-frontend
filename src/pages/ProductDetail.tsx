@@ -143,11 +143,11 @@ const ProductDetail: React.FC = () => {
         if (!product?.imageUrls || product.imageUrls.length <= 1 || isHovering) return;
 
         const interval = setInterval(() => {
-            nextImage();
+            setCurrentImageIndex(prevIndex => (prevIndex + 1) % (product.imageUrls?.length || 1));
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [product?.imageUrls, currentImageIndex, isHovering]);
+    }, [product?.id, product?.imageUrls?.length, isHovering]);
 
     const fetchProductData = async (productId: string) => {
         setLoading(true);
@@ -417,7 +417,11 @@ const ProductDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 {/* Image Section */}
                 <div className="neu-extruded p-6">
-                     <div className="neu-inset rounded-2xl overflow-hidden h-[400px] flex items-center justify-center bg-[#E0E5EC] relative group">
+                     <div 
+                        onMouseEnter={() => setIsHovering(true)}
+                        onMouseLeave={() => setIsHovering(false)}
+                        className="neu-inset rounded-2xl overflow-hidden h-[400px] flex items-center justify-center bg-[#E0E5EC] relative group"
+                     >
                          <img 
                             src={product.imageUrls?.[currentImageIndex] || 'https://placehold.co/600x400?text=No+Image'} 
                             alt={product.title} 
@@ -462,7 +466,7 @@ const ProductDetail: React.FC = () => {
                             </div>
                         ))}
                      </div>
-                     <div className="mt-4 pt-4 border-t border-gray-200/50">
+                     <div className="mt-4 pt-4 border-t border-gray-200/50 relative">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-[#3D4852]">Description</h3>
                             {isSeller && (

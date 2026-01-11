@@ -6,27 +6,28 @@ import { productService, type Product } from '../services/product';
 
 interface FeaturedSectionProps {
     title: string;
-    sortBy: string;
-    sortDir: 'asc' | 'desc';
+    type: 'ending-soon' | 'most-bids' | 'high-price';
     linkTo?: string; // Optional "View All" link params
 }
 
-const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, sortBy, sortDir, linkTo }) => {
+const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, type, linkTo }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                // Fetch top 5
-                const params = {
-                    page: 0,
-                    size: 5,
-                    sortBy,
-                    sortDir
-                };
-                const data = await productService.searchProducts(params);
-                setProducts(Array.isArray(data) ? data : data.content || []);
+                let data;
+                if (type === 'most-bids') {
+                    data = await productService.getTopMostBids();
+                } else if (type === 'high-price') {
+                    data = await productService.getTopHighestPrice();
+                } else if (type === 'ending-soon') {
+                    data = await productService.getTopEndingSoon();
+                }
+                
+                // Handle various response data shapes
+                setProducts(Array.isArray(data) ? data : data?.content || data?.data || []);
             } catch (error) {
                 console.error(`Failed to fetch ${title}`, error);
             } finally {
@@ -35,7 +36,7 @@ const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, sortBy, sortDi
         };
 
         fetchProducts();
-    }, [sortBy, sortDir, title]);
+    }, [type, title]);
 
     if (loading) return <div className="py-8 text-center">Loading {title}...</div>;
     

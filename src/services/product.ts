@@ -60,6 +60,21 @@ export const productService = {
         return response.data;
     },
 
+    getTopMostBids: async () => {
+        const response = await api.get('/products/top/most-bids');
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    getTopHighestPrice: async () => {
+        const response = await api.get('/products/top/highest-price');
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
+    getTopEndingSoon: async () => {
+        const response = await api.get('/products/top/ending-soon');
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
     getBids: async (productId: number | string) => {
         const response = await api.get(`/bids/product/${productId}`);
         return response.data && response.data.data ? response.data.data : response.data;

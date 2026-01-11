@@ -101,7 +101,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </Link>
                 
                 {/* Price Section */}
-                {/* Price Section */}
                 <div className="mt-3 flex flex-wrap items-end justify-between gap-x-1">
                      <div className="flex flex-col">
                          <span className="text-xs font-medium text-[#6B7280] uppercase tracking-wide">Current Price</span>
@@ -135,7 +134,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 
                 <div className="mt-auto pt-3 space-y-2">
                     {/* Time & Date */}
-                    <div className="flex items-center justify-between text-xs font-medium text-[#6B7280]">
+                    <div className="flex flex-wrap gap-y-2 items-center justify-between text-xs font-medium text-[#6B7280]">
                         <div className="flex items-center px-2 py-1 neu-inset rounded-lg" title={`Posted: ${new Date(product.createdAt || '').toLocaleDateString()}`}>
                             <Calendar className="w-3 h-3 mr-1" />
                             <span>{new Date(product.createdAt || '').toLocaleDateString()}</span>

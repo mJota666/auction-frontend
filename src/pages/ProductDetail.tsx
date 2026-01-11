@@ -119,13 +119,24 @@ const ProductDetail: React.FC = () => {
             setCurrentImageIndex(0); 
             
             let validBids: Bid[] = [];
+            
+            console.log('--- RAW BIDS DATA ---', bidsData);
+
             if (Array.isArray(bidsData)) {
                 validBids = bidsData;
             } else if (bidsData && Array.isArray((bidsData as any).data)) {
                  validBids = (bidsData as any).data;
+            } else if (bidsData && Array.isArray((bidsData as any).content)) {
+                 validBids = (bidsData as any).content;
             }
 
             const sortedBids = validBids.sort((a: Bid, b: Bid) => b.amount - a.amount);
+            
+            if (sortedBids.length > 0) {
+                console.log('--- CHECK BIDDER ID ---');
+                console.log('First Bid Object:', JSON.stringify(sortedBids[0], null, 2));
+            }
+
             setBids(sortedBids);
             
             const currentPrice = productData.currentPrice || productData.startPrice;
@@ -171,12 +182,28 @@ const ProductDetail: React.FC = () => {
     };
 
     const handleDenyBidder = async (bidderId: number) => {
-        if (!id || !window.confirm('Are you sure you want to deny this bidder? They will be unable to bid on this product again.')) return;
+        console.log('--- ACTION: DENY BIDDER ---');
+        console.log('Product ID:', id);
+        console.log('Bidder ID to block:', bidderId);
+        
+        if (!id) {
+            console.error('Missing Product ID');
+            return;
+        }
+        if (!bidderId) {
+            console.error('Missing Bidder ID (Value is falsy)');
+            toast.error('Cannot identifying bidder ID');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to deny bidder #${bidderId}?`)) return;
+        
         try {
             await productService.denyBidder(id, bidderId);
             toast.success('Bidder denied successfully');
             fetchProductData(id);
         } catch (error: any) {
+             console.error('Deny Bidder Error:', error);
              toast.error(error.response?.data?.message || 'Failed to deny bidder');
         }
     };
@@ -665,9 +692,12 @@ const ProductDetail: React.FC = () => {
                                         </div>
                                         {isSeller && product?.status === 'ACTIVE' && (
                                             <button
-                                                onClick={() => handleDenyBidder(Number((bid as any).bidderId || 0))} // Assuming bidderId is available or I need to use mock logic if type missing
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 bg-red-100 p-2 rounded-full"
-                                                title="Deny this bidder"
+                                                onClick={() => {
+                                                    console.log('Clicking Deny for Bid:', bid);
+                                                    handleDenyBidder(bid.bidderId);
+                                                }}
+                                                className="text-red-500 hover:text-red-700 bg-red-100 p-2 rounded-full transition-colors"
+                                                title={`Deny Bidder ID: ${bid.bidderId}`}
                                             >
                                                 <Ban className="w-4 h-4" />
                                             </button>

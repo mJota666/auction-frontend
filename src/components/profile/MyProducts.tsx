@@ -10,8 +10,18 @@ const MyProducts: React.FC = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const data = await productService.getMyProducts();
-                setProducts(Array.isArray(data) ? data : []);
+                const result = await productService.getMyProducts();
+                // Handle both direct array and paginated response { content: [...] }
+                let list: Product[] = [];
+                if (Array.isArray(result)) {
+                    list = result;
+                } else if (result && Array.isArray((result as any).content)) {
+                    list = (result as any).content;
+                } else if (result && Array.isArray((result as any).data)) {
+                    // Fallback in case wrapper is different
+                    list = (result as any).data;
+                }
+                setProducts(list);
             } catch (error) {
                 console.error("Failed to fetch my products", error);
             } finally {
@@ -38,7 +48,7 @@ const MyProducts: React.FC = () => {
                         <div key={product.id} className="neu-extruded rounded-2xl p-4 transition-all hover:scale-[1.02] duration-300 flex flex-col h-full">
                             <div className="h-48 rounded-xl neu-inset overflow-hidden relative mb-4">
                                 <img 
-                                    src={product.imageUrls?.[0] || 'https://placehold.co/600x400?text=No+Image'} 
+                                    src={product.thumbnailUrl || product.imageUrls?.[0] || 'https://placehold.co/600x400?text=No+Image'} 
                                     alt={product.title} 
                                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                                 />

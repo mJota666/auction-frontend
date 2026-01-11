@@ -39,7 +39,8 @@ export interface Bid {
     amount: number;
     bidderName: string;
     bidderId: number;
-    bidTime: string;
+    bidTime?: string; // Legacy?
+    time?: string; // Actual API field
 }
 
 export const productService = {

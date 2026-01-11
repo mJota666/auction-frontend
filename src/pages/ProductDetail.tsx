@@ -274,7 +274,6 @@ const ProductDetail: React.FC = () => {
 
 
     // --- Buyer Actions ---
-
     const handleAskQuestion = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isAuthenticated) {
@@ -536,7 +535,7 @@ const ProductDetail: React.FC = () => {
                                 <span className="text-[#6B7280] text-xs uppercase">Highest Bidder</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-[#6C63FF] font-bold">
-                                        {highestBidder ? highestBidder.bidderName : 'No bids yet'}
+                                        {highestBidder ? highestBidder.bidderName : (product.currentWinnerName || 'No bids yet')}
                                     </span>
                                 </div>
                             </div>
@@ -739,7 +738,18 @@ const ProductDetail: React.FC = () => {
                                                 <p className="text-sm font-bold text-[#3D4852]">{bid.bidderName}</p>
                                                 {/* Hidden bid ID info if needed */}
                                             </div>
-                                            <p className="text-xs text-[#6B7280] font-medium">{new Date(bid.bidTime).toLocaleString()}</p>
+                                            <p className="text-xs text-[#6B7280] font-medium">
+                                                {(() => {
+                                                    const time = bid.time || bid.bidTime || (bid as any).createdAt || (bid as any).createAt;
+                                                    try {
+                                                        if (!time) return 'Unknown time';
+                                                        const d = new Date(time);
+                                                        return isNaN(d.getTime()) ? String(time) : d.toLocaleString('vi-VN');
+                                                    } catch (e) {
+                                                        return String(time);
+                                                    }
+                                                })()}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">

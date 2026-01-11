@@ -111,14 +111,17 @@ export const adminService = {
     },
 
     // Product Management
-    getProducts: async () => {
+    getProducts: async (page = 0, size = 10) => {
         // Use Admin endpoint to see ALL products (Active, Sold, Hidden...) with new param
         const response = await api.get<any>('/admin/products', {
-            params: { includeAllStatuses: true }
+            params: {
+                includeAllStatuses: true,
+                page,
+                size
+            }
         });
-        console.log('API getProducts raw:', response.data);
-        // Fallback for Pageable or List
-        return response.data?.data?.content || response.data?.data || [];
+        // Return the full Page object (content, totalPages, etc.)
+        return response.data?.data || response.data;
     },
     deleteProduct: async (id: number) => {
         const response = await api.delete(`/admin/products/${id}`); // Corrected from /products/admin/products

@@ -10,6 +10,12 @@ interface AdminState {
     products: Product[];
     categories: Category[];
     stats: AdminStats | null;
+    productPagination: {
+        page: number;
+        size: number;
+        totalPages: number;
+        totalElements: number;
+    };
     loading: boolean;
     error: string | null;
 }
@@ -21,6 +27,12 @@ const initialState: AdminState = {
     products: [],
     categories: [],
     stats: null,
+    productPagination: {
+        page: 0,
+        size: 10,
+        totalPages: 0,
+        totalElements: 0,
+    },
     loading: false,
     error: null,
 };
@@ -30,7 +42,7 @@ type Action =
     | { type: 'FETCH_INIT' }
     | { type: 'FETCH_USERS_SUCCESS'; payload: User[] }
     | { type: 'FETCH_REQUESTS_SUCCESS'; payload: User[] }
-    | { type: 'FETCH_PRODUCTS_SUCCESS'; payload: Product[] }
+    | { type: 'FETCH_PRODUCTS_SUCCESS'; payload: { content: Product[], totalPages: number, totalElements: number, number: number } }
     | { type: 'FETCH_CATEGORIES_SUCCESS'; payload: Category[] }
     | { type: 'FETCH_STATS_SUCCESS'; payload: AdminStats }
     | { type: 'TOGGLE_LOCK_SUCCESS'; payload: number } // userId
@@ -54,7 +66,17 @@ const adminReducer = (state: AdminState, action: Action): AdminState => {
         case 'FETCH_REQUESTS_SUCCESS':
             return { ...state, loading: false, upgradeRequests: action.payload };
         case 'FETCH_PRODUCTS_SUCCESS':
-            return { ...state, loading: false, products: action.payload };
+            return { 
+                ...state, 
+                loading: false, 
+                products: action.payload.content,
+                productPagination: {
+                    page: action.payload.number,
+                    size: state.productPagination.size,
+                    totalPages: action.payload.totalPages,
+                    totalElements: action.payload.totalElements
+                }
+            };
         case 'FETCH_CATEGORIES_SUCCESS':
             return { ...state, loading: false, categories: action.payload };
         case 'FETCH_STATS_SUCCESS':
@@ -123,7 +145,7 @@ interface AdminContextType extends AdminState {
     dispatch: React.Dispatch<Action>;
     fetchUsers: () => Promise<void>;
     fetchUpgradeRequests: () => Promise<void>;
-    fetchProducts: () => Promise<void>;
+    fetchProducts: (page?: number, size?: number) => Promise<void>;
     fetchCategories: () => Promise<void>;
     fetchStats: () => Promise<void>;
     // Actions
@@ -164,11 +186,35 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (page = 0, size = 10) => {
         dispatch({ type: 'FETCH_INIT' });
         try {
-            const data = await adminService.getProducts();
-            dispatch({ type: 'FETCH_PRODUCTS_SUCCESS', payload: Array.isArray(data) ? data : [] });
+            const data = await adminService.getProducts(page, size);
+            // Check if data has content (Page object) or is just an array (fallback)
+            if (data && Array.isArray(data.content)) {
+                dispatch({ 
+                    type: 'FETCH_PRODUCTS_SUCCESS', 
+                    payload: {
+                        content: data.content,
+                        totalPages: data.totalPages,
+                        totalElements: data.totalElements,
+                        number: data.number
+                    }
+                });
+            } else if (Array.isArray(data)) {
+                 // Fallback if backend returns list
+                 dispatch({ 
+                    type: 'FETCH_PRODUCTS_SUCCESS', 
+                    payload: {
+                        content: data,
+                        totalPages: 1,
+                        totalElements: data.length,
+                        number: 0
+                    }
+                });
+            } else {
+                 dispatch({ type: 'FETCH_PRODUCTS_SUCCESS', payload: { content: [], totalPages: 0, totalElements: 0, number: 0 } });
+            }
         } catch (error) {
             dispatch({ type: 'SET_ERROR', payload: 'Failed to fetch products' });
         }

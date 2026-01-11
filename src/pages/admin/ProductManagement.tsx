@@ -1,16 +1,22 @@
 import React, { useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { Trash2, Package } from 'lucide-react';
+import { Trash2, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ProductManagement: React.FC = () => {
-    const { products, loading, error, fetchProducts, deleteProduct } = useAdmin();
+    const { products, productPagination, loading, error, fetchProducts, deleteProduct } = useAdmin();
     const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
     const [productToDelete, setProductToDelete] = React.useState<number | null>(null);
 
     useEffect(() => {
-        fetchProducts();
+        fetchProducts(0, 10);
     }, []);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 0 && newPage < productPagination.totalPages) {
+            fetchProducts(newPage, productPagination.size);
+        }
+    };
 
     const handleDeleteClick = (id: number) => {
         setProductToDelete(id);
@@ -112,6 +118,84 @@ const ProductManagement: React.FC = () => {
                 confirmText="Delete"
                 variant="danger"
             />
+
+            {/* Pagination Controls */}
+            {products.length > 0 && productPagination.totalPages > 1 && (
+                <div className="flex justify-center items-center gap-4 mt-8">
+                    <button
+                        onClick={() => handlePageChange(productPagination.page - 1)}
+                        disabled={productPagination.page === 0}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                            productPagination.page === 0 
+                            ? 'text-gray-400 cursor-not-allowed neu-flat' 
+                            : 'text-[#3D4852] neu-btn hover:text-[#6C63FF]'
+                        }`}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                        {/* First Page */}
+                        {productPagination.totalPages > 5 && productPagination.page > 2 && (
+                             <button
+                                onClick={() => handlePageChange(0)}
+                                className="w-10 h-10 rounded-xl font-bold flex items-center justify-center transition-all text-[#6B7280] neu-btn hover:text-[#3D4852]"
+                            >
+                                1
+                            </button>
+                        )}
+                         {productPagination.totalPages > 5 && productPagination.page > 3 && (
+                            <span className="text-gray-400">...</span>
+                        )}
+
+                        {/* Middle Pages Window */}
+                        {Array.from({ length: productPagination.totalPages }).map((_, i) => {
+                            // Show window around current page
+                            if (productPagination.totalPages > 5) {
+                                if (i < productPagination.page - 1 || i > productPagination.page + 1) return null;
+                            }
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => handlePageChange(i)}
+                                    className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center transition-all ${
+                                        productPagination.page === i
+                                        ? 'bg-[#6C63FF] text-white shadow-md'
+                                        : 'text-[#6B7280] neu-btn hover:text-[#3D4852]'
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            );
+                        })}
+
+                        {/* Last Page */}
+                         {productPagination.totalPages > 5 && productPagination.page < productPagination.totalPages - 2 && (
+                            <span className="text-gray-400">...</span>
+                        )}
+                        {productPagination.totalPages > 5 && productPagination.page < productPagination.totalPages - 3 && (
+                             <button
+                                onClick={() => handlePageChange(productPagination.totalPages - 1)}
+                                className="w-10 h-10 rounded-xl font-bold flex items-center justify-center transition-all text-[#6B7280] neu-btn hover:text-[#3D4852]"
+                            >
+                                {productPagination.totalPages}
+                            </button>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={() => handlePageChange(productPagination.page + 1)}
+                        disabled={productPagination.page >= productPagination.totalPages - 1}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                            productPagination.page >= productPagination.totalPages - 1
+                            ? 'text-gray-400 cursor-not-allowed neu-flat'
+                            : 'text-[#3D4852] neu-btn hover:text-[#6C63FF]'
+                        }`}
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

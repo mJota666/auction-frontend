@@ -67,6 +67,15 @@ api.interceptors.response.use(
             }
         }
 
+        // Handle 403 Forbidden (Account locked/deleted)
+        if (error.response && error.response.status === 403) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+            return Promise.reject(error);
+        }
+
         return Promise.reject(error);
     }
 );

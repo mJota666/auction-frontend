@@ -34,6 +34,8 @@ type Action =
     | { type: 'FETCH_CATEGORIES_SUCCESS'; payload: Category[] }
     | { type: 'FETCH_STATS_SUCCESS'; payload: AdminStats }
     | { type: 'TOGGLE_LOCK_SUCCESS'; payload: number } // userId
+    | { type: 'DELETE_USER_SUCCESS'; payload: number } // userId
+    | { type: 'DELETE_USER_SUCCESS'; payload: number } // userId
     | { type: 'APPROVE_UPGRADE_SUCCESS'; payload: number } // userId
     | { type: 'REJECT_UPGRADE_SUCCESS'; payload: number } // userId
     | { type: 'DELETE_PRODUCT_SUCCESS'; payload: number } // productId
@@ -61,6 +63,16 @@ const adminReducer = (state: AdminState, action: Action): AdminState => {
             return {
                 ...state,
                 users: state.users.map(u => u.id === action.payload ? { ...u, locked: !u.locked } : u)
+            };
+        case 'DELETE_USER_SUCCESS':
+            return {
+                ...state,
+                users: state.users.filter(u => u.id !== action.payload)
+            };
+        case 'DELETE_USER_SUCCESS':
+            return {
+                ...state,
+                users: state.users.filter(u => u.id !== action.payload)
             };
         case 'APPROVE_UPGRADE_SUCCESS': {
             // Find the user ID from the request being approved
@@ -116,6 +128,8 @@ interface AdminContextType extends AdminState {
     fetchStats: () => Promise<void>;
     // Actions
     toggleUserLock: (id: number) => Promise<void>;
+    deleteUser: (id: number) => Promise<void>;
+    resetUserPassword: (id: number) => Promise<void>;
     approveUpgrade: (id: number) => Promise<void>;
     rejectUpgrade: (id: number, reason: string) => Promise<void>;
     deleteProduct: (id: number) => Promise<void>;
@@ -186,6 +200,25 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             toast.success('User status updated');
         } catch (error) {
             toast.error('Failed to update user status');
+        }
+    };
+
+    const deleteUser = async (id: number) => {
+        try {
+            await adminService.deleteUser(id);
+            dispatch({ type: 'DELETE_USER_SUCCESS', payload: id });
+            toast.success('User deleted successfully');
+        } catch (error) {
+            toast.error('Failed to delete user');
+        }
+    };
+
+    const resetUserPassword = async (id: number) => {
+        try {
+            await adminService.resetUserPassword(id);
+            toast.success('Password reset email sent');
+        } catch (error) {
+            toast.error('Failed to reset password');
         }
     };
 
@@ -260,6 +293,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 fetchCategories,
                 fetchStats,
                 toggleUserLock,
+                deleteUser,
+                resetUserPassword,
                 approveUpgrade,
                 rejectUpgrade,
                 deleteProduct,

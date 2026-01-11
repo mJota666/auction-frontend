@@ -40,6 +40,14 @@ export const adminService = {
         const response = await api.put(`/admin/users/${userId}/lock`);
         return response.data;
     },
+    deleteUser: async (userId: number) => {
+        const response = await api.delete(`/admin/users/${userId}`);
+        return response.data;
+    },
+    resetUserPassword: async (userId: number) => {
+        const response = await api.post(`/admin/users/${userId}/reset-password`);
+        return response.data;
+    },
     getUpgradeRequests: async () => {
         const response = await api.get<any>('/admin/upgrade-requests');
         const rawData = response.data?.data || [];
@@ -119,7 +127,7 @@ export const adminService = {
 
     // Stats
     getDashboardStats: async () => {
-        const response = await api.get<AdminStats>('/admin/stats');
-        return response.data;
+        const response = await api.get<any>('/admin/stats');
+        return response.data?.data || response.data;
     }
 };

@@ -9,9 +9,8 @@ const AdminDashboard: React.FC = () => {
         fetchStats();
     }, []);
 
-    // Mock data for charts
-    const newAuctions = stats?.newAuctionsLast7Days || [5, 12, 8, 15, 20, 18, 25];
-    const revenueTrend = stats?.revenueTrend || [50, 40, 60, 80, 75, 90, 100];
+    const newAuctions = stats?.newAuctionsLast7Days;
+    const revenueTrend = stats?.revenueTrend;
 
     if (!stats) return <div className="flex justify-center py-20 text-[#3D4852] font-medium">Loading Dashboard...</div>;
 
@@ -48,54 +47,56 @@ const AdminDashboard: React.FC = () => {
                 ))}
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* New Auctions Chart */}
-                <div className="neu-flat rounded-[2.5rem] p-8 bg-[#E0E5EC]">
-                    <h3 className="text-xl font-bold text-[#3D4852] mb-6 flex items-center gap-2">
-                        <Gavel className="w-5 h-5 text-indigo-500" /> New Auctions <span className="text-sm font-normal text-gray-500 ml-auto">(Last 7 Days)</span>
-                    </h3>
-                    <div className="neu-inset rounded-[2rem] p-6 h-64 flex items-end justify-between gap-4">
-                        {newAuctions.map((value, idx) => (
-                            <div key={idx} className="flex flex-col items-center w-full h-full justify-end group">
-                                <div 
-                                    className="w-full bg-[#6C63FF] rounded-t-xl opacity-80 group-hover:opacity-100 transition-all shadow-md relative group-hover:-translate-y-1"
-                                    style={{ height: `${(value / Math.max(...newAuctions)) * 100}%` }}
-                                >
-                                     {/* Tooltip */}
-                                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#3D4852] text-white text-xs font-bold py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-                                        {value} Auctions
+            {/* Charts Section - Only show if data exists */}
+            {newAuctions && revenueTrend && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* New Auctions Chart */}
+                    <div className="neu-flat rounded-[2.5rem] p-8 bg-[#E0E5EC]">
+                        <h3 className="text-xl font-bold text-[#3D4852] mb-6 flex items-center gap-2">
+                            <Gavel className="w-5 h-5 text-indigo-500" /> New Auctions <span className="text-sm font-normal text-gray-500 ml-auto">(Last 7 Days)</span>
+                        </h3>
+                        <div className="neu-inset rounded-[2rem] p-6 h-64 flex items-end justify-between gap-4">
+                            {newAuctions.map((value, idx) => (
+                                <div key={idx} className="flex flex-col items-center w-full h-full justify-end group">
+                                    <div 
+                                        className="w-full bg-[#6C63FF] rounded-t-xl opacity-80 group-hover:opacity-100 transition-all shadow-md relative group-hover:-translate-y-1"
+                                        style={{ height: `${(value / Math.max(...newAuctions)) * 100}%` }}
+                                    >
+                                        {/* Tooltip */}
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#3D4852] text-white text-xs font-bold py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                            {value} Auctions
+                                        </div>
                                     </div>
+                                    <span className="text-xs font-bold text-gray-400 mt-3">D-{7-idx}</span>
                                 </div>
-                                <span className="text-xs font-bold text-gray-400 mt-3">D-{7-idx}</span>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                {/* Revenue Trend Chart */}
-                <div className="neu-flat rounded-[2.5rem] p-8 bg-[#E0E5EC]">
-                    <h3 className="text-xl font-bold text-[#3D4852] mb-6 flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-green-500" /> Revenue Trend <span className="text-sm font-normal text-gray-500 ml-auto">(Last 7 Months)</span>
-                    </h3>
-                    <div className="neu-inset rounded-[2rem] p-6 h-64 flex items-end justify-between gap-4">
-                        {revenueTrend.map((value, idx) => (
-                            <div key={idx} className="flex flex-col items-center w-full h-full justify-end group">
-                                <div 
-                                    className="w-full bg-green-500 rounded-t-xl opacity-80 group-hover:opacity-100 transition-all shadow-md relative group-hover:-translate-y-1"
-                                    style={{ height: `${value}%` }} 
-                                >
-                                     {/* Tooltip */}
-                                     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#3D4852] text-white text-xs font-bold py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-                                        {value}%
+                    {/* Revenue Trend Chart */}
+                    <div className="neu-flat rounded-[2.5rem] p-8 bg-[#E0E5EC]">
+                        <h3 className="text-xl font-bold text-[#3D4852] mb-6 flex items-center gap-2">
+                            <DollarSign className="w-5 h-5 text-green-500" /> Revenue Trend <span className="text-sm font-normal text-gray-500 ml-auto">(Last 7 Months)</span>
+                        </h3>
+                        <div className="neu-inset rounded-[2rem] p-6 h-64 flex items-end justify-between gap-4">
+                            {revenueTrend.map((value, idx) => (
+                                <div key={idx} className="flex flex-col items-center w-full h-full justify-end group">
+                                    <div 
+                                        className="w-full bg-green-500 rounded-t-xl opacity-80 group-hover:opacity-100 transition-all shadow-md relative group-hover:-translate-y-1"
+                                        style={{ height: `${value}%` }} 
+                                    >
+                                        {/* Tooltip */}
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#3D4852] text-white text-xs font-bold py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                            {value}%
+                                        </div>
                                     </div>
+                                    <span className="text-xs font-bold text-gray-400 mt-3">M-{7-idx}</span>
                                 </div>
-                                <span className="text-xs font-bold text-gray-400 mt-3">M-{7-idx}</span>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
             
         </div>
     );

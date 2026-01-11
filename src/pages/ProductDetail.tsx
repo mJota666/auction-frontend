@@ -476,7 +476,7 @@ const ProductDetail: React.FC = () => {
                         </div>
                         <div 
                              ref={descriptionRef}
-                             className={`text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto relative transition-all duration-500 ease-in-out ${isDescriptionExpanded ? '' : 'max-h-[100px] overflow-hidden'}`} 
+                             className={`text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto [&_*]:!bg-transparent relative transition-all duration-500 ease-in-out ${isDescriptionExpanded ? '' : 'max-h-[100px] overflow-hidden'}`} 
                              dangerouslySetInnerHTML={{ __html: product.description }} 
                         />
                          {(!isDescriptionExpanded && isDescriptionOverflowing) && (

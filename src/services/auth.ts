@@ -117,7 +117,14 @@ export const authService = {
         // If userId is provided, get that user's ratings. Else get own via new API.
         const url = userId ? `/users/${userId}/ratings` : '/ratings/my-ratings';
         const response = await api.get(url);
-        return response.data && response.data.data ? response.data.data : response.data;
+        const rawData = response.data && response.data.data ? response.data.data : response.data;
+
+        // Handle Spring Page structure
+        if (rawData && Array.isArray(rawData.content)) {
+            return rawData.content;
+        }
+
+        return rawData;
     },
 
     rateUser: async (targetUserId: number, score: number, comment: string, orderId?: number) => {

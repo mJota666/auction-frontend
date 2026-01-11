@@ -20,6 +20,7 @@ const MyRatings: React.FC = () => {
         const fetchRatings = async () => {
             try {
                 const data = await authService.getRatings();
+                console.log('My Ratings Data:', data); // Debug log
                 setRatings(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Failed to fetch ratings", error);

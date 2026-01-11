@@ -101,11 +101,24 @@ const MySales: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                                                 Waiting for payment
                                             </span>
                                         )}
+                                        
+                                        {/* View Payment Proof (Seller) */}
+                                        {order.paymentProof && (
+                                            <a 
+                                                href={order.paymentProof} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="neu-btn px-4 py-2 rounded-xl text-[#3D4852] bg-gray-100 text-xs font-bold flex items-center hover:bg-gray-200"
+                                            >
+                                                <Upload className="w-3 h-3 mr-1.5" /> View Payment
+                                            </a>
+                                        )}
+
                                         {/* Show Upload Shipping Proof if status is PAID or PREPARING */}
                                         {(order.status === OrderStatus.PAID || order.status === OrderStatus.PREPARING) && (
                                             <button 
                                                 onClick={() => setUploadData({ isOpen: true, orderId: order.id })}
-                                                className="neu-btn px-4 py-2 rounded-xl text-white bg-[#6C63FF] text-xs font-bold flex items-center hover:bg-[#5a52d5]"
+                                                className="neu-btn px-4 py-2 rounded-xl text-white bg-[#6C63FF] text-xs font-bold flex items-center hover:bg-[#5a52d5] hover:text-white"
                                             >
                                                 <Upload className="w-3 h-3 mr-1.5" /> Confirm Shipping
                                             </button>

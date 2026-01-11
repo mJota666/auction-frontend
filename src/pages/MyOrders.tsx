@@ -82,11 +82,11 @@ const MyOrders: React.FC<{ isTab?: boolean }> = ({ isTab }) => {
                                             <>
                                                 <button
                                                     onClick={() => setUploadData({ isOpen: true, orderId: order.id })}
-                                                    className="neu-btn px-4 py-2 rounded-xl text-white bg-green-500 font-bold text-sm flex items-center hover:bg-green-600 transition-colors"
+                                                    className="neu-btn px-4 py-2 rounded-xl !text-white bg-green-500 font-bold text-sm flex items-center hover:bg-green-600 hover:!text-white transition-colors"
                                                 >
                                                     <Upload className="w-4 h-4 mr-2" /> Upload Proof
                                                 </button>
-                                                <Link to={`/checkout/${order.id}`} className="neu-btn px-4 py-2 rounded-xl text-white bg-[#6C63FF] font-bold text-sm flex items-center hover:bg-[#5a52d5] transition-colors">
+                                                <Link to={`/checkout/${order.id}`} className="neu-btn px-4 py-2 rounded-xl !text-white bg-[#6C63FF] font-bold text-sm flex items-center hover:bg-[#5a52d5] transition-colors">
                                                     <CreditCard className="w-4 h-4 mr-2" /> Pay
                                                 </Link>
                                             </>

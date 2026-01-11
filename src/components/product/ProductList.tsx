@@ -266,6 +266,19 @@ const ProductList: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                            {/* Reset Filter Button */}
+                            {(filters.query || filters.categoryId || filters.sortBy) && (
+                                <button
+                                    onClick={() => {
+                                        setLocalQuery('');
+                                        dispatch({ type: 'SET_FILTER', payload: { query: '', categoryId: null, sortBy: '' } });
+                                        setSearchParams({});
+                                    }}
+                                    className="hidden md:flex items-center px-4 py-3 neu-extruded rounded-2xl text-sm font-bold text-[#3D4852] hover:text-red-500 transition-all bg-[#E0E5EC]"
+                                >
+                                    Reset Filter
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

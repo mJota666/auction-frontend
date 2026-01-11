@@ -214,14 +214,7 @@ const ProductDetail: React.FC = () => {
     const handleAppendDescription = async () => {
         if (!id || !appendContent.trim()) return;
         try {
-            // Append timestamp
-            const dateStr = new Date().toLocaleString('vi-VN');
-            const newDesc = `
-                <br/>
-                <hr/>
-                <p><strong>✏️ Update ${dateStr}:</strong></p>
-                ${appendContent}
-            `;
+            const newDesc = appendContent;
             await productService.appendDescription(id, newDesc);
             toast.success('Description updated successfully');
             setShowAppendModal(false);

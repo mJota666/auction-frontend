@@ -122,7 +122,7 @@ export const productService = {
     },
 
     appendDescription: async (productId: number | string, description: string) => {
-        const response = await api.put(`/products/${productId}/description`, { description });
+        const response = await api.put(`/products/${productId}/description`, { content: description });
         return response.data;
     },
 

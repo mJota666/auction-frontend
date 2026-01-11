@@ -123,7 +123,7 @@ const Register: React.FC = () => {
           </div>
           
           {step === 'info' ? (
-              <form className="space-y-6" onSubmit={handleSubmit(onInfoSubmit)}>
+              <form className="space-y-6" onSubmit={handleSubmit(onInfoSubmit)} noValidate>
                 <div className="space-y-4">
                   <div>
                     <div className="relative">
@@ -242,7 +242,7 @@ const Register: React.FC = () => {
                 </div>
               </form>
           ) : (
-              <form className="mt-8 space-y-6" onSubmit={onOtpSubmit}>
+              <form className="mt-8 space-y-6" onSubmit={onOtpSubmit} noValidate>
                   <div className="text-center">
                       <ShieldCheck className="w-12 h-12 text-[#6C63FF] mx-auto mb-4" />
                       <p className="text-sm text-gray-600 mb-4 font-medium">

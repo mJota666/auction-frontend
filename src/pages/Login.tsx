@@ -102,7 +102,7 @@ const Login: React.FC = () => {
             </p>
           </div>
           
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="space-y-5">
               <div>
                 <label htmlFor="email-address" className="sr-only">Email address</label>

@@ -495,7 +495,7 @@ const ProductDetail: React.FC = () => {
                                     You are the seller of this product. You cannot bid.
                                 </div>
                             ) : (
-                                <form onSubmit={handlePlaceBid} className="space-y-6">
+                                <form onSubmit={handlePlaceBid} className="space-y-6" noValidate>
                                     <div>
                                         <label htmlFor="bidAmount" className="block text-sm font-bold text-[#3D4852] mb-2">
                                             Your Bid <span className="font-normal text-[#6B7280]">(Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format((product.currentPrice || product.startPrice) + product.stepPrice)})</span>

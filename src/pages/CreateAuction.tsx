@@ -153,7 +153,7 @@ const CreateAuction: React.FC = () => {
         <p className="text-gray-500 font-medium">List your item and start receiving bids</p>
       </div>
       
-      <form onSubmit={handleSubmit(onSubmit)} className="neu-extruded rounded-[2.5rem] p-8 md:p-12 space-y-10">
+      <form onSubmit={handleSubmit(onSubmit)} className="neu-extruded rounded-[2.5rem] p-8 md:p-12 space-y-10" noValidate>
         
         {/* Basic Info Section */}
         <div className="space-y-6">

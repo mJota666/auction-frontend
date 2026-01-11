@@ -227,6 +227,7 @@ const ProductList: React.FC = () => {
                                         {filters.sortBy === 'end_at_asc' ? 'Ending Soon' : 
                                          filters.sortBy === 'price_asc' ? 'Price: Low to High' :
                                          filters.sortBy === 'price_desc' ? 'Price: High to Low' : 
+                                         filters.sortBy === 'bid_count_desc' ? 'Most Bids' :
                                          'Newest Arrivals'}
                                     </span>
                                     <svg className="h-4 w-4 fill-current ml-2" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
@@ -238,11 +239,21 @@ const ProductList: React.FC = () => {
                                             { label: 'Newest Arrivals', value: '' },
                                             { label: 'Ending Soon', value: 'end_at_asc' },
                                             { label: 'Price: Low to High', value: 'price_asc' },
-                                            { label: 'Price: High to Low', value: 'price_desc' }
+                                            { label: 'Price: High to Low', value: 'price_desc' },
+                                            { label: 'Most Bids', value: 'bid_count_desc' }
                                          ].map((option) => (
                                             <button
                                                 key={option.value}
-                                                onClick={() => dispatch({ type: 'SET_FILTER', payload: { sortBy: option.value } })}
+                                                onClick={() => {
+                                                    dispatch({ type: 'SET_FILTER', payload: { sortBy: option.value } });
+                                                    const newParams = new URLSearchParams(searchParams);
+                                                    if (option.value) {
+                                                        newParams.set('sortBy', option.value);
+                                                    } else {
+                                                        newParams.delete('sortBy');
+                                                    }
+                                                    setSearchParams(newParams);
+                                                }}
                                                 className={`w-full text-left px-4 py-3 text-sm font-medium rounded-xl transition-all ${
                                                     filters.sortBy === option.value 
                                                     ? 'neu-inset text-[#6C63FF]' 

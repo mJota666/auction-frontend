@@ -64,7 +64,7 @@ const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, type, linkTo }
                         to={`/search?sortBy=${
                             type === 'high-price' ? 'price_desc' : 
                             type === 'ending-soon' ? 'end_at_asc' : 
-                            '' // most-bids -> default/newest for now as Search API limitation
+                            'bid_count_desc' // most-bids
                         }`} 
                         className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
                     >

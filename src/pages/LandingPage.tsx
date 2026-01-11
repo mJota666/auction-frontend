@@ -15,9 +15,9 @@ const LandingPage: React.FC = () => {
       <HeroOverlay />
       
       <div className="bg-[#E0E5EC] relative z-10" style={{ marginTop: '100vh' }}>
-         <FeaturedSection title="Ending Soon" type="ending-soon" />
          <FeaturedSection title="Hot Auctions" type="most-bids" />
          <FeaturedSection title="High Value" type="high-price" />
+         <FeaturedSection title="Ending Soon" type="ending-soon" />
       </div>
 
       <Features />

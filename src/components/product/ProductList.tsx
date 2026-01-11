@@ -18,10 +18,11 @@ const ProductList: React.FC = () => {
     useEffect(() => {
         const query = searchParams.get('query') || '';
         const catId = searchParams.get('categoryId');
+        const sortBy = searchParams.get('sortBy') || '';
         
         // Only dispatch if different to avoid loops
-        if (filters.query !== query || filters.categoryId !== catId) {
-             dispatch({ type: 'SET_FILTER', payload: { query, categoryId: catId } });
+        if (filters.query !== query || filters.categoryId !== catId || filters.sortBy !== sortBy) {
+             dispatch({ type: 'SET_FILTER', payload: { query, categoryId: catId, sortBy } });
              setLocalQuery(query);
         }
     }, [searchParams]);

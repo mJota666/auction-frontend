@@ -27,7 +27,7 @@ const getInitialState = (): ProductState => {
         totalPages: 0,
         currentPage: 0,
         filters: {
-            sortBy: '',
+            sortBy: params.get('sortBy') || '',
             query: params.get('query') || '',
             categoryId: params.get('categoryId'),
         },

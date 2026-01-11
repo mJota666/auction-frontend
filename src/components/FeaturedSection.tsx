@@ -59,7 +59,15 @@ const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, type, linkTo }
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-end mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-                    <Link to="/products" className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center">
+                    {/* Determine sort param based on type */}
+                    <Link 
+                        to={`/search?sortBy=${
+                            type === 'high-price' ? 'price_desc' : 
+                            type === 'ending-soon' ? 'end_at_asc' : 
+                            '' // most-bids -> default/newest for now as Search API limitation
+                        }`} 
+                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
+                    >
                         View All <ArrowRight size={16} className="ml-1" />
                     </Link>
                 </div>

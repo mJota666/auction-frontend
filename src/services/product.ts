@@ -14,9 +14,11 @@ export interface Product {
     categoryId?: number;
     sellerId?: number;
     sellerName?: string; // Add this
-    buyNowPrice?: number;
+    buyPrice?: number; // Added for Buy Now functionality
+    buyNowPrice?: number; // Keep for compatibility if needed
     autoExtendEnabled?: boolean;
     createdAt?: string;
+    createAt?: string; // Add this for compatibility
     bidCount?: number; // Added based on BE feedback
     currentWinnerName?: string; // Added based on BE feedback
     sellerRatingPositive?: number; // Added based on BE feedback
@@ -41,6 +43,8 @@ export interface Bid {
     bidderId: number;
     bidTime?: string; // Legacy?
     time?: string; // Actual API field
+    ratingPositive?: number;
+    ratingNegative?: number;
 }
 
 export const productService = {

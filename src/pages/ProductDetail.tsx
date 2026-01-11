@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productService, type Product, type Bid, type Question } from '../services/product';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart, XCircle, Edit, Ban, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart, XCircle, Edit, Ban, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -180,6 +180,13 @@ const ProductDetail: React.FC = () => {
             } else if (bidsData && Array.isArray((bidsData as any).content)) {
                  validBids = (bidsData as any).content;
             }
+
+            // Normalize snake_case to camelCase for ratings if needed
+            validBids = validBids.map((bid: any) => ({
+                ...bid,
+                ratingPositive: bid.ratingPositive ?? bid.rating_positive,
+                ratingNegative: bid.ratingNegative ?? bid.rating_negative
+            }));
 
             const sortedBids = validBids.sort((a: Bid, b: Bid) => b.amount - a.amount);
             
@@ -534,14 +541,30 @@ const ProductDetail: React.FC = () => {
                             <span className="text-3xl font-extrabold text-[#6C63FF]">
                                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.currentPrice || product.startPrice)}
                             </span>
-                            <span className="text-xs font-medium text-[#A0AEC0] mt-1">Start: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</span>
+                            <div className="flex justify-between items-end mt-2">
+                                <span className="text-xs font-medium text-[#A0AEC0]">Starting Price: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.startPrice)}</span>
+                            </div>
+                            {product.buyPrice && (
+                                <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <span className="text-xs font-medium text-[#6B7280] uppercase tracking-wide block mb-0.5">Buy Now Price</span>
+                                    <span className="text-lg font-bold text-green-600">
+                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.buyPrice)}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="mt-2 text-xs text-[#9CA3AF] flex items-center">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Posted: {new Date(product.createAt || product.createdAt || '').toLocaleDateString()}
+                            </div>
                         </div>
                         
                         <div className="neu-extruded p-6 space-y-3 text-sm font-medium">
                             <div className="flex flex-col">
                                 <span className="text-[#6B7280] text-xs uppercase">Seller</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[#3D4852] font-bold">{product.sellerName || `User #${product.sellerId || '?'}`}</span>
+                                    <Link to={`/users/${product.sellerId}`} className="text-[#3D4852] font-bold hover:text-[#6C63FF] hover:underline">
+                                        {product.sellerName || `User #${product.sellerId || '?'}`}
+                                    </Link>
                                     <div className="flex items-center text-xs text-yellow-500 bg-yellow-100 px-1.5 py-0.5 rounded-md">
                                         <Star className="w-3 h-3 fill-current mr-0.5" />
                                         <span className="font-bold">{getSellerRating()}</span>
@@ -551,9 +574,31 @@ const ProductDetail: React.FC = () => {
                             <div className="flex flex-col">
                                 <span className="text-[#6B7280] text-xs uppercase">Highest Bidder</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[#6C63FF] font-bold">
-                                        {highestBidder ? highestBidder.bidderName : (product.currentWinnerName || 'No bids yet')}
-                                    </span>
+                                    {highestBidder ? (
+                                        <>
+                                            <Link to={`/users/${highestBidder.bidderId}`} className="text-[#6C63FF] font-bold hover:underline">
+                                                {highestBidder.bidderName}
+                                            </Link>
+                                            {(highestBidder.ratingPositive !== undefined || highestBidder.ratingNegative !== undefined) && (
+                                                <div className="flex items-center text-xs text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded border border-yellow-200">
+                                                    <Star className="w-3 h-3 fill-current mr-0.5" />
+                                                    <span className="font-bold">
+                                                        {(() => {
+                                                            const pos = highestBidder.ratingPositive || 0;
+                                                            const neg = highestBidder.ratingNegative || 0;
+                                                            if (pos + neg === 0) return 'New';
+                                                            return ((pos / (pos + neg)) * 5).toFixed(1);
+                                                        })()}
+                                                    </span>
+                                                    <span className="text-gray-400 ml-1 font-normal">({(highestBidder.ratingPositive || 0) + (highestBidder.ratingNegative || 0)})</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <span className="text-[#6C63FF] font-bold">
+                                            {product.currentWinnerName || 'No bids yet'}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -752,8 +797,25 @@ const ProductDetail: React.FC = () => {
                                         </div>
                                         <div className="ml-4">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-bold text-[#3D4852]">{bid.bidderName}</p>
-                                                {/* Hidden bid ID info if needed */}
+                                                <Link to={`/users/${bid.bidderId}`} className="text-sm font-bold text-[#3D4852] hover:text-[#6C63FF] hover:underline">
+                                                    {bid.bidderName}
+                                                </Link>
+                                                
+                                                {/* Bidder Rating */}
+                                                {(bid.ratingPositive !== undefined || bid.ratingNegative !== undefined) && (
+                                                    <div className="flex items-center text-[10px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded border border-yellow-200">
+                                                        <Star className="w-2.5 h-2.5 fill-current mr-0.5" />
+                                                        <span className="font-bold">
+                                                            {(() => {
+                                                                const pos = bid.ratingPositive || 0;
+                                                                const neg = bid.ratingNegative || 0;
+                                                                if (pos + neg === 0) return 'New';
+                                                                return ((pos / (pos + neg)) * 5).toFixed(1);
+                                                            })()}
+                                                        </span>
+                                                        <span className="text-gray-400 ml-1 font-normal">({(bid.ratingPositive || 0) + (bid.ratingNegative || 0)})</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <p className="text-xs text-[#6B7280] font-medium">
                                                 {(() => {

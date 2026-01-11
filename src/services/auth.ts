@@ -62,6 +62,11 @@ export const authService = {
         return response.data;
     },
 
+    getUserPublicProfile: async (userId: number) => {
+        const response = await api.get(`/users/${userId}`);
+        return response.data && response.data.data ? response.data.data : response.data;
+    },
+
     updateProfile: async (data: any) => {
         const response = await api.put('/users/me', data);
         return response.data;

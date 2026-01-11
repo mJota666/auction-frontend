@@ -25,6 +25,7 @@ import { AdminProvider } from './context/AdminContext';
 import ProductManagement from './pages/admin/ProductManagement';
 import ProtectedRoute from './components/ProtectedRoute';
 import ForgotPassword from './pages/ForgotPassword';
+import PublicProfile from './pages/PublicProfile';
 
 // Main App Component
 
@@ -45,6 +46,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/users/:id" element={<PublicProfile />} />
 
           {/* Public Routes with MainLayout */}
           <Route element={<MainLayout />}>

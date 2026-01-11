@@ -344,6 +344,8 @@ const ProductDetail: React.FC = () => {
 
     const bidStatus = getBidStatus();
 
+    const [isBidding, setIsBidding] = useState(false);
+
     const handlePlaceBid = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isAuthenticated || !user) {
@@ -371,15 +373,19 @@ const ProductDetail: React.FC = () => {
     };
 
     const confirmBid = async () => {
-        setShowConfirmModal(false);
         if (!id) return;
+        setIsBidding(true);
 
         try {
             await productService.placeBid(Number(id), bidAmount);
             toast.success('Bid placed successfully!');
             fetchProductData(id);
+            setShowConfirmModal(false);
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Failed to place bid');
+            // Do NOT close modal on error, let user retry or cancel
+        } finally {
+            setIsBidding(false);
         }
     };
 
@@ -855,30 +861,15 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* Confirmation Modal */}
-            {showConfirmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 neu-extruded animate-in fade-in zoom-in duration-200">
-                        <h3 className="text-xl font-extrabold text-[#3D4852] mb-4">Confirm Your Bid</h3>
-                        <p className="text-gray-600 mb-6">
-                            Are you sure you want to place a bid of <span className="font-bold text-[#6C63FF] text-lg">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bidAmount)}</span> for <span className="font-semibold">{product?.title}</span>?
-                        </p>
-                        <div className="flex gap-4">
-                            <button 
-                                onClick={() => setShowConfirmModal(false)}
-                                className="flex-1 py-3 px-4 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button 
-                                onClick={confirmBid}
-                                className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-[#6C63FF] hover:bg-[#5a52d5] shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5"
-                            >
-                                Confirm Bid
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmationModal
+                isOpen={showConfirmModal}
+                onClose={() => !isBidding && setShowConfirmModal(false)}
+                onConfirm={confirmBid}
+                title="Confirm Bid"
+                message={`Are you sure you want to place a bid of ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bidAmount)}?`}
+                confirmText="Place Bid"
+                isLoading={isBidding}
+            />
 
             {/* Deny Bidder Confirmation Modal */}
             <ConfirmationModal 

@@ -89,12 +89,27 @@ export const orderService = {
 
     getOrder: async (id: number | string) => {
         const response = await api.get(`/orders/${id}`);
-        return response.data;
+        const data = response.data?.data || response.data;
+
+        return {
+            id: data.id,
+            productId: data.product?.id,
+            productTitle: data.product?.title,
+            productImage: data.product?.thumbnailUrl || data.product?.imageUrls?.[0],
+            buyerId: data.winnerId,
+            sellerId: data.sellerId,
+            amount: data.finalPrice, // Map finalPrice to amount
+            status: data.status,
+            createdAt: data.createdAt,
+            shippingAddress: data.shippingAddress,
+            paymentProof: data.paymentProof,
+            shippingProof: data.shippingProof
+        };
     },
 
     createPaymentIntent: async (orderId: number) => {
         const response = await api.post(`/payment/create-payment-intent/${orderId}`);
-        return response.data; // Expecting { clientSecret: string }
+        return response.data?.data || response.data;
     },
 
     updateOrderStatus: async (orderId: number, status: OrderStatus) => {

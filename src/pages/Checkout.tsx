@@ -6,9 +6,9 @@ import { orderService, type Order } from '../services/order';
 import { toast } from 'react-toastify';
 
 // Replace with your public key
-const stripePromise = loadStripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''); 
 
-const CheckoutForm: React.FC<{ orderId: number, clientSecret: string }> = ({ clientSecret }) => {
+const CheckoutForm: React.FC<{ orderId: number, clientSecret: string }> = ({ orderId, clientSecret }) => {
     const stripe = useStripe();
     const elements = useElements();
     const navigate = useNavigate();
@@ -38,8 +38,16 @@ const CheckoutForm: React.FC<{ orderId: number, clientSecret: string }> = ({ cli
             setProcessing(false);
         } else {
             if (result.paymentIntent.status === 'succeeded') {
-                toast.success('Payment successful!');
-                navigate('/my-orders');
+                try {
+                    // Update order status to PAID after successful payment
+                    await orderService.updateOrderStatus(orderId, 'PAID' as any);
+                    toast.success('Payment successful!');
+                    navigate('/my-orders');
+                } catch (error) {
+                    console.error('Failed to update order status:', error);
+                    toast.warning('Payment succeeded but failed to update order status. Please contact support.');
+                    navigate('/my-orders');
+                }
             }
         }
     };
@@ -79,6 +87,8 @@ const Checkout: React.FC = () => {
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [error, setError] = useState<string | null>(null);
+
     useEffect(() => {
         if (id) {
             fetchOrderAndPayment(id);
@@ -87,22 +97,42 @@ const Checkout: React.FC = () => {
 
     const fetchOrderAndPayment = async (orderId: string) => {
         try {
+            console.log('Fetching order:', orderId);
             const orderData = await orderService.getOrder(orderId);
+            console.log('Order data loaded:', orderData);
             setOrder(orderData);
             
             // Create payment intent
+            console.log('Creating payment intent for order:', orderId);
             const paymentData = await orderService.createPaymentIntent(Number(orderId));
+            console.log('Payment data received:', paymentData);
+            
+            if (!paymentData || !paymentData.clientSecret) {
+                throw new Error('No client secret returned from backend');
+            }
             setClientSecret(paymentData.clientSecret);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load checkout', error);
-            toast.error('Failed to load checkout');
+            const msg = error.response?.data?.message || error.message || 'Failed to load checkout';
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
     };
 
     if (loading) return <div className="flex justify-center py-20">Loading...</div>;
-    if (!order || !clientSecret) return <div className="text-center py-20">Order not found or Payment not initialized</div>;
+    
+    if (error) return (
+        <div className="text-center py-20">
+            <h2 className="text-xl font-bold text-red-500 mb-2">Error Loading Checkout</h2>
+            <p className="text-gray-600">{error}</p>
+            <p className="text-sm text-gray-400 mt-4">Order ID: {id}</p>
+            <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Retry</button>
+        </div>
+    );
+
+    if (!order || !clientSecret) return <div className="text-center py-20">Order not found or Payment not initialized (Unknown State)</div>;
 
     return (
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { productService, type Product, type Bid, type Question } from '../services/product';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart, XCircle, Edit, Ban } from 'lucide-react';
+import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart, XCircle, Edit, Ban, ChevronDown, ChevronUp } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -19,6 +19,17 @@ const ProductDetail: React.FC = () => {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [bidAmount, setBidAmount] = useState<number>(0);
     const [loading, setLoading] = useState(true);
+
+    // Slideshow state
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+
+    // Description collapse state
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const [isDescriptionOverflowing, setIsDescriptionOverflowing] = useState(false);
+    const descriptionRef = React.useRef<HTMLDivElement>(null);
+
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const [questionText, setQuestionText] = useState('');
     const [submittingQuestion, setSubmittingQuestion] = useState(false);
@@ -91,9 +102,13 @@ const ProductDetail: React.FC = () => {
         }
     }, [product?.categoryId]);
 
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const [isHovering, setIsHovering] = useState(false);
+    useEffect(() => {
+        if (descriptionRef.current) {
+            setIsDescriptionOverflowing(descriptionRef.current.scrollHeight > 100);
+        }
+    }, [product?.description]);
+
+
 
     const handleImageChange = (newIndex: number) => {
         if (isTransitioning || newIndex === currentImageIndex) return;
@@ -460,9 +475,22 @@ const ProductDetail: React.FC = () => {
                             )}
                         </div>
                         <div 
-                            className="text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto" 
-                            dangerouslySetInnerHTML={{ __html: product.description }} 
+                             ref={descriptionRef}
+                             className={`text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto relative transition-all duration-500 ease-in-out ${isDescriptionExpanded ? '' : 'max-h-[100px] overflow-hidden'}`} 
+                             dangerouslySetInnerHTML={{ __html: product.description }} 
                         />
+                         {(!isDescriptionExpanded && isDescriptionOverflowing) && (
+                            <div className="absolute bottom-12 left-0 w-full h-24 bg-gradient-to-t from-[#E0E5EC] to-transparent pointer-events-none" />
+                         )}
+                         {isDescriptionOverflowing && (
+                            <button 
+                                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                className="mt-4 text-[#6C63FF] text-sm font-bold hover:underline flex items-center justify-center w-full gap-1 z-10 relative"
+                            >
+                                {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+                                {isDescriptionExpanded ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
+                            </button>
+                         )}
                      </div>
                 </div>
 

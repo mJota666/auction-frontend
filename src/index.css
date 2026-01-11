@@ -123,3 +123,8 @@
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
+
+/* Quill Editor Overrides - FIX WHITE BACKGROUND PASTE ISSUE */
+.ql-editor * {
+  background-color: transparent !important;
+}

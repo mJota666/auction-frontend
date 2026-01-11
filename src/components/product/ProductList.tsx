@@ -143,7 +143,7 @@ const ProductList: React.FC = () => {
         if (!createdAt) return false;
         const dateStr = createdAt.endsWith('Z') ? createdAt : `${createdAt}Z`;
         const diffMinutes = (new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 60);
-        return diffMinutes < 60;
+        return diffMinutes < 10;
     };
 
     return (

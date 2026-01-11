@@ -6,6 +6,7 @@ interface Rating {
     id: number;
     fromUserId: number;
     fromUserName: string;
+    raterName?: string; // Added field from backend
     score: number; // 1 or -1
     comment: string;
     createdAt: string;
@@ -20,7 +21,6 @@ const MyRatings: React.FC = () => {
         const fetchRatings = async () => {
             try {
                 const data = await authService.getRatings();
-                console.log('My Ratings Data:', data); // Debug log
                 setRatings(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Failed to fetch ratings", error);
@@ -75,7 +75,7 @@ const MyRatings: React.FC = () => {
                             <div className="flex-1">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
-                                        <span className="font-bold text-[#3D4852] text-lg">{rating.fromUserName || `User #${rating.fromUserId}`}</span>
+                                        <span className="font-bold text-[#3D4852] text-lg">{rating.raterName || rating.fromUserName || `User #${rating.fromUserId}`}</span>
                                         {rating.productTitle && (
                                             <div className="text-xs text-[#6C63FF] font-medium mt-0.5">
                                                 Purchase: {rating.productTitle}

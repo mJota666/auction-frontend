@@ -6,6 +6,7 @@ export const OrderStatus = {
     PREPARING: 'PREPARING',
     SHIPPED: 'SHIPPED', // New status for Shipping Proof
     DELIVERING: 'DELIVERING',
+    DELIVERED: 'DELIVERED', // New status requested by Backend
     COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED'
 } as const;
@@ -97,7 +98,9 @@ export const orderService = {
     },
 
     updateOrderStatus: async (orderId: number, status: OrderStatus) => {
-        const response = await api.put(`/orders/${orderId}/status`, { status });
+        const response = await api.put(`/orders/${orderId}/status`, {}, {
+            params: { status }
+        });
         return response.data;
     },
 

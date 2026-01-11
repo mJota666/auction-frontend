@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
 import { Trash2, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -63,20 +64,22 @@ const ProductManagement: React.FC = () => {
                             <div key={product.id} className="neu-flat rounded-2xl p-6 md:p-4 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-4 items-center group hover:bg-white/40 transition-colors">
                                 <div className="col-span-1 font-mono text-gray-400 text-xs">#{product.id}</div>
                                 
-                                <div className="col-span-5 flex items-center gap-4">
-                                    <div className="flex-shrink-0 w-16 h-16 rounded-xl neu-inset overflow-hidden p-1 bg-white/50">
-                                        {product.thumbnailUrl || product.imageUrls?.[0] ? (
-                                            <img className="w-full h-full object-cover rounded-lg" src={product.thumbnailUrl || product.imageUrls?.[0]} alt="" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                <Package className="w-6 h-6" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-[#3D4852] text-lg">{product.title}</div>
-                                        <div className="text-xs text-gray-500 truncate max-w-xs">{product.description || 'No description'}</div>
-                                    </div>
+                                <div className="col-span-5">
+                                    <Link to={`/products/${product.id}`} className="flex items-center gap-4 group cursor-pointer">
+                                        <div className="flex-shrink-0 w-16 h-16 rounded-xl neu-inset overflow-hidden p-1 bg-white/50 transition-transform group-hover:scale-105">
+                                            {product.thumbnailUrl || product.imageUrls?.[0] ? (
+                                                <img className="w-full h-full object-cover rounded-lg" src={product.thumbnailUrl || product.imageUrls?.[0]} alt="" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                    <Package className="w-6 h-6" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-[#3D4852] text-lg transition-colors group-hover:text-[#6C63FF]">{product.title}</div>
+                                            <div className="text-xs text-gray-500 truncate max-w-xs">{product.description || 'No description'}</div>
+                                        </div>
+                                    </Link>
                                 </div>
 
                                 <div className="col-span-3 font-bold text-[#6C63FF]">

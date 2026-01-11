@@ -399,7 +399,7 @@ const ProductDetail: React.FC = () => {
 
         if (diffMs < 0) return 'Ended';
         if (diffDays > 3) return date.toLocaleString();
-        if (diffDays > 0) return `${diffDays} days ${diffHours} hours left`;
+        if (diffDays > 0) return `${diffDays} days ${diffHours} hours ${diffMinutes} minutes left`;
         if (diffHours > 0) return `${diffHours} hours ${diffMinutes} minutes left`;
         return `${diffMinutes} minutes left`;
     };

@@ -473,7 +473,24 @@ const ProductDetail: React.FC = () => {
                         <div 
                              ref={descriptionRef}
                              className={`text-[#6B7280] text-sm font-medium leading-relaxed break-words [&_img]:max-w-full [&_img]:rounded-xl [&_img]:h-auto [&_img]:mx-auto [&_*]:!bg-transparent relative transition-all duration-500 ease-in-out ${isDescriptionExpanded ? '' : 'max-h-[100px] overflow-hidden'}`} 
-                             dangerouslySetInnerHTML={{ __html: product.description }} 
+                             dangerouslySetInnerHTML={{ __html: (() => {
+                                 if (!product.description) return '';
+                                 return product.description.replace(/\[Cập nhật ngày (\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})\]:/g, (match, day, month, year, hour, minute) => {
+                                     try {
+                                         const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute)));
+                                         // Shift UTC to UTC+7 manually
+                                         const vnTime = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+                                         const d = String(vnTime.getUTCDate()).padStart(2, '0');
+                                         const m = String(vnTime.getUTCMonth() + 1).padStart(2, '0');
+                                         const y = vnTime.getUTCFullYear();
+                                         const h = String(vnTime.getUTCHours()).padStart(2, '0');
+                                         const min = String(vnTime.getUTCMinutes()).padStart(2, '0');
+                                         return `<strong>[Cập nhật ngày ${d}/${m}/${y} ${h}:${min}]:</strong>`;
+                                     } catch (e) {
+                                         return match;
+                                     }
+                                 });
+                             })() }} 
                         />
                          {(!isDescriptionExpanded && isDescriptionOverflowing) && (
                             <div className="absolute bottom-12 left-0 w-full h-24 bg-gradient-to-t from-[#E0E5EC] to-transparent pointer-events-none" />

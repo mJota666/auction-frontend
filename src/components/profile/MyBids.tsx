@@ -20,8 +20,30 @@ const MyBids: React.FC = () => {
     useEffect(() => {
         const fetchBids = async () => {
             try {
-                const data = await productService.getMyBids();
-                setBids(Array.isArray(data) ? data : []);
+                const result = await productService.getMyBids();
+                let rawList: any[] = [];
+                
+                // Extract array from paginated response
+                if (Array.isArray(result)) {
+                    rawList = result;
+                } else if (result && Array.isArray((result as any).content)) {
+                    rawList = (result as any).content;
+                } else if (result && Array.isArray((result as any).data)) {
+                    rawList = (result as any).data;
+                }
+
+                // Map to UserBid interface
+                const mappedList: UserBid[] = rawList.map(item => ({
+                    id: item.id,
+                    amount: item.amount,
+                    bidTime: item.time || item.bidTime || item.createdAt, // Backend sends 'time'
+                    productId: item.product?.id,
+                    productTitle: item.product?.title || 'Unknown Product',
+                    productImage: item.product?.thumbnailUrl || item.product?.imageUrls?.[0], 
+                    status: item.status || 'ACTIVE' // Status might be on bid or derived
+                }));
+
+                setBids(mappedList);
             } catch (error) {
                 console.error("Failed to fetch bids", error);
             } finally {
@@ -49,11 +71,11 @@ const MyBids: React.FC = () => {
                              <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-6">
                                     <div className="w-20 h-20 rounded-xl neu-inset p-1.5 flex-shrink-0">
-                                        {bid.productImage ? (
-                                            <img src={bid.productImage} alt={bid.productTitle} className="w-full h-full object-cover rounded-lg"/>
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Img</div>
-                                        )}
+                                        <img 
+                                            src={bid.productImage || (bid as any).thumbnailUrl || 'https://placehold.co/600x400?text=No+Img'} 
+                                            alt={bid.productTitle} 
+                                            className="w-full h-full object-cover rounded-lg"
+                                        />
                                     </div>
                                     <div>
                                         <Link to={`/products/${bid.productId}`} className="text-lg font-bold text-[#3D4852] hover:text-[#6C63FF] transition-colors flex items-center gap-2 group">
@@ -61,7 +83,18 @@ const MyBids: React.FC = () => {
                                             <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </Link>
                                         <p className="text-sm text-gray-500 mt-1">
-                                            Bid Time: <span className="font-medium">{new Date(bid.bidTime).toLocaleString()}</span>
+                                            Bid Time: <span className="font-medium">
+                                                {(() => {
+                                                    const time = bid.bidTime || (bid as any).time || (bid as any).createdAt;
+                                                    try {
+                                                        if (!time) return 'Unknown';
+                                                        const d = new Date(time);
+                                                        return isNaN(d.getTime()) ? String(time) : d.toLocaleString('vi-VN');
+                                                    } catch {
+                                                        return String(time);
+                                                    }
+                                                })()}
+                                            </span>
                                         </p>
                                     </div>
                                 </div>

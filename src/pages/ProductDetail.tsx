@@ -7,6 +7,8 @@ import { Clock, User as UserIcon, Star, MessageCircle, Send, Heart, XCircle, Edi
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
+import ConfirmationModal from '../components/ConfirmationModal';
+
 const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { isAuthenticated, user, favorites, toggleFavorite } = useAuth();
@@ -29,6 +31,10 @@ const ProductDetail: React.FC = () => {
 
     // Bidding State
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    
+    // Deny Bidder State
+    const [showDenyModal, setShowDenyModal] = useState(false);
+    const [bidderToDeny, setBidderToDeny] = useState<number | null>(null);
 
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -181,30 +187,25 @@ const ProductDetail: React.FC = () => {
         }
     };
 
-    const handleDenyBidder = async (bidderId: number) => {
-        console.log('--- ACTION: DENY BIDDER ---');
-        console.log('Product ID:', id);
-        console.log('Bidder ID to block:', bidderId);
-        
-        if (!id) {
-            console.error('Missing Product ID');
-            return;
-        }
-        if (!bidderId) {
-            console.error('Missing Bidder ID (Value is falsy)');
-            toast.error('Cannot identifying bidder ID');
-            return;
-        }
+    const handleDenyBidder = (bidderId: number) => {
+        if (!id) return;
+        setBidderToDeny(bidderId);
+        setShowDenyModal(true);
+    };
 
-        if (!window.confirm(`Are you sure you want to deny bidder #${bidderId}?`)) return;
+    const confirmDenyBidder = async () => {
+        if (!id || !bidderToDeny) return;
         
         try {
-            await productService.denyBidder(id, bidderId);
+            await productService.denyBidder(id, bidderToDeny);
             toast.success('Bidder denied successfully');
             fetchProductData(id);
         } catch (error: any) {
              console.error('Deny Bidder Error:', error);
              toast.error(error.response?.data?.message || 'Failed to deny bidder');
+        } finally {
+            setShowDenyModal(false);
+            setBidderToDeny(null);
         }
     };
 
@@ -692,10 +693,7 @@ const ProductDetail: React.FC = () => {
                                         </div>
                                         {isSeller && product?.status === 'ACTIVE' && (
                                             <button
-                                                onClick={() => {
-                                                    console.log('Clicking Deny for Bid:', bid);
-                                                    handleDenyBidder(bid.bidderId);
-                                                }}
+                                                onClick={() => handleDenyBidder(bid.bidderId)}
                                                 className="text-red-500 hover:text-red-700 bg-red-100 p-2 rounded-full transition-colors"
                                                 title={`Deny Bidder ID: ${bid.bidderId}`}
                                             >
@@ -737,6 +735,17 @@ const ProductDetail: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Deny Bidder Confirmation Modal */}
+            <ConfirmationModal 
+                isOpen={showDenyModal}
+                onClose={() => setShowDenyModal(false)}
+                onConfirm={confirmDenyBidder}
+                title="Deny Bidder"
+                message={`Are you sure you want to deny bidder #${bidderToDeny}? They will be blocked from this auction.`}
+                confirmText="Deny Bidder"
+                variant="danger"
+            />
 
             {/* Append Description Modal */}
             {showAppendModal && (

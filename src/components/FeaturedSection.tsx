@@ -42,10 +42,10 @@ const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, sortBy, sortDi
     // Always render section even if empty, to prove it exists
     if (!products || products.length === 0) {
         return (
-            <section className="py-12 bg-gray-50/50">
+            <section className="py-12 bg-[#E0E5EC]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
-                     <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+                     <div className="text-center py-10 neu-inset rounded-lg">
                         <p className="text-gray-500">No auctions found in this category yet.</p>
                      </div>
                 </div>
@@ -54,7 +54,7 @@ const FeaturedSection: React.FC<FeaturedSectionProps> = ({ title, sortBy, sortDi
     }
 
     return (
-        <section className="py-12 bg-gray-50/50">
+        <section className="py-12 bg-[#E0E5EC]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-end mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">{title}</h2>

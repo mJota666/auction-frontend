@@ -14,7 +14,7 @@ const LandingPage: React.FC = () => {
       <Navbar />
       <HeroOverlay />
       
-      <div className="bg-white relative z-10" style={{ marginTop: '100vh' }}>
+      <div className="bg-[#E0E5EC] relative z-10" style={{ marginTop: '100vh' }}>
          <FeaturedSection title="Ending Soon" sortBy="endAt" sortDir="asc" />
          <FeaturedSection title="Hot Auctions" sortBy="bidCount" sortDir="desc" />
          <FeaturedSection title="High Value" sortBy="currentPrice" sortDir="desc" />

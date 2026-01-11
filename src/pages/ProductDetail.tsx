@@ -36,8 +36,6 @@ const ProductDetail: React.FC = () => {
     const [showDenyModal, setShowDenyModal] = useState(false);
     const [bidderToDeny, setBidderToDeny] = useState<number | null>(null);
 
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
     const isSeller = user && product && Number(user.id) === Number(product.sellerId);
     
     const isFavorite = product ? favorites.includes(product.id) : false;
@@ -62,6 +60,7 @@ const ProductDetail: React.FC = () => {
 
     useEffect(() => {
         if (id) {
+            setCurrentImageIndex(0);
             fetchProductData(id);
 
             // Real-time Updates via SSE
@@ -92,17 +91,48 @@ const ProductDetail: React.FC = () => {
         }
     }, [product?.categoryId]);
 
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
+
+    const handleImageChange = (newIndex: number) => {
+        if (isTransitioning || newIndex === currentImageIndex) return;
+        
+        setIsTransitioning(true);
+        // Wait for fade out
+        setTimeout(() => {
+            setCurrentImageIndex(newIndex);
+            // Small delay to allow render before fading back in
+            requestAnimationFrame(() => {
+                 setIsTransitioning(false);
+            });
+        }, 300);
+    };
+
     const nextImage = (e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (!product?.imageUrls) return;
-        setCurrentImageIndex((prev) => (prev === product.imageUrls!.length - 1 ? 0 : prev + 1));
+        const newIndex = (currentImageIndex + 1) % product.imageUrls.length;
+        handleImageChange(newIndex);
     };
 
     const prevImage = (e?: React.MouseEvent) => {
         e?.stopPropagation();
         if (!product?.imageUrls) return;
-        setCurrentImageIndex((prev) => (prev === 0 ? product.imageUrls!.length - 1 : prev - 1));
+        const newIndex = (currentImageIndex - 1 + product.imageUrls.length) % product.imageUrls.length;
+        handleImageChange(newIndex);
     };
+
+    // Auto-play slideshow
+    useEffect(() => {
+        if (!product?.imageUrls || product.imageUrls.length <= 1 || isHovering) return;
+
+        const interval = setInterval(() => {
+            nextImage();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [product?.imageUrls, currentImageIndex, isHovering]);
 
     const fetchProductData = async (productId: string) => {
         setLoading(true);
@@ -122,7 +152,7 @@ const ProductDetail: React.FC = () => {
                  setQuestions((qaData as any).content);
             }
 
-            setCurrentImageIndex(0); 
+            // Moved reset image index to useEffect on ID change
             
             let validBids: Bid[] = [];
             

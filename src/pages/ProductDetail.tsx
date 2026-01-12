@@ -891,6 +891,7 @@ const ProductDetail: React.FC = () => {
                 message={`Are you sure you want to place a bid of ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(bidAmount)}?`}
                 confirmText="Place Bid"
                 isLoading={isBidding}
+                autoClose={false}
             />
 
             {/* Deny Bidder Confirmation Modal */}
@@ -902,6 +903,7 @@ const ProductDetail: React.FC = () => {
                 message={`Are you sure you want to deny bidder #${bidderToDeny}? They will be blocked from this auction.`}
                 confirmText="Deny Bidder"
                 variant="danger"
+                autoClose={false}
             />
 
             {/* Append Description Modal */}

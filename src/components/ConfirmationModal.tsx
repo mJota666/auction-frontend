@@ -11,6 +11,7 @@ interface ConfirmationModalProps {
     cancelText?: string;
     variant?: 'danger' | 'primary' | 'warning';
     isLoading?: boolean;
+    autoClose?: boolean;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -22,7 +23,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmText = 'Confirm',
     cancelText = 'Cancel',
     variant = 'primary',
-    isLoading = false
+    isLoading = false,
+    autoClose = true
 }) => {
     if (!isOpen) return null;
 
@@ -38,7 +40,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
     const handleConfirm = () => {
         onConfirm();
-        if (!isLoading) {
+        if (autoClose) {
             onClose();
         }
     };

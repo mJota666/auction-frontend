@@ -390,7 +390,16 @@ const ProductDetail: React.FC = () => {
     };
 
     const getRelativeTime = (isoDate: string) => {
-        const date = new Date(isoDate);
+        let date: Date;
+        let tStr = String(isoDate);
+        // If string looks like ISO/timestamp but missing Z or offset, treat as UTC
+        if (tStr.match(/^\d{4}-\d{2}-\d{2}/) && !tStr.endsWith('Z') && !tStr.match(/[+-]\d{2}:?\d{2}$/)) {
+            tStr = tStr.replace(' ', 'T') + 'Z';
+            date = new Date(tStr);
+        } else {
+            date = new Date(isoDate);
+        }
+
         const now = new Date();
         const diffMs = date.getTime() - now.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -398,7 +407,7 @@ const ProductDetail: React.FC = () => {
         const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
         if (diffMs < 0) return 'Ended';
-        if (diffDays > 3) return date.toLocaleString();
+        if (diffDays > 3) return date.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
         if (diffDays > 0) return `${diffDays} days ${diffHours} hours ${diffMinutes} minutes left`;
         if (diffHours > 0) return `${diffHours} hours ${diffMinutes} minutes left`;
         return `${diffMinutes} minutes left`;
@@ -828,8 +837,21 @@ const ProductDetail: React.FC = () => {
                                                     const time = bid.time || bid.bidTime || (bid as any).createdAt || (bid as any).createAt;
                                                     try {
                                                         if (!time) return 'Unknown time';
-                                                        const d = new Date(time);
-                                                        return isNaN(d.getTime()) ? String(time) : d.toLocaleString('vi-VN');
+                                                        let d: Date;
+                                                        // Handle array format [yyyy, mm, dd, hh, mm, ss] from backend
+                                                        if (Array.isArray(time)) {
+                                                            d = new Date(Date.UTC(time[0], time[1] - 1, time[2], time[3], time[4], time[5] || 0));
+                                                        } else {
+                                                            let tStr = String(time);
+                                                            // If string looks like ISO/timestamp but missing Z or offset, treat as UTC
+                                                            if (tStr.match(/^\d{4}-\d{2}-\d{2}/) && !tStr.endsWith('Z') && !tStr.match(/[+-]\d{2}:?\d{2}$/)) {
+                                                                // Ensure separator is T
+                                                                tStr = tStr.replace(' ', 'T') + 'Z';
+                                                            }
+                                                            d = new Date(tStr);
+                                                        }
+                                                        
+                                                        return isNaN(d.getTime()) ? String(time) : d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
                                                     } catch (e) {
                                                         return String(time);
                                                     }

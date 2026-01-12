@@ -6,30 +6,43 @@ import { Eye } from 'lucide-react';
 const MyProducts: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+
+    const fetchProducts = async (page: number) => {
+        setLoading(true);
+        try {
+            const result = await productService.getMyProducts({ page, size: 10 });
+            console.log('--- DEBUG: /products/seller/me response ---', result);
+            
+            // Handle both direct array and paginated response { content: [...] }
+            let list: Product[] = [];
+            let total = 0;
+
+            if (result && Array.isArray(result.content)) {
+                list = result.content;
+                total = result.totalPages || 0;
+            } else if (result && Array.isArray(result.data)) {
+                 list = result.data;
+                 total = result.totalPages || 0;
+            } else if (Array.isArray(result)) {
+                // Fallback for non-paginated API
+                list = result;
+                total = 1;
+            }
+
+            setProducts(list);
+            setTotalPages(total);
+        } catch (error) {
+            console.error("Failed to fetch my products", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const result = await productService.getMyProducts();
-                // Handle both direct array and paginated response { content: [...] }
-                let list: Product[] = [];
-                if (Array.isArray(result)) {
-                    list = result;
-                } else if (result && Array.isArray((result as any).content)) {
-                    list = (result as any).content;
-                } else if (result && Array.isArray((result as any).data)) {
-                    // Fallback in case wrapper is different
-                    list = (result as any).data;
-                }
-                setProducts(list);
-            } catch (error) {
-                console.error("Failed to fetch my products", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProducts();
-    }, []);
+        fetchProducts(currentPage);
+    }, [currentPage]);
 
     if (loading) return <div className="text-center py-10">Loading products...</div>;
 
@@ -43,40 +56,65 @@ const MyProducts: React.FC = () => {
                     You don't have any active listings.
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {products.map((product) => (
-                        <div key={product.id} className="neu-extruded rounded-2xl p-4 transition-all hover:scale-[1.02] duration-300 flex flex-col h-full">
-                            <div className="h-48 rounded-xl neu-inset overflow-hidden relative mb-4">
-                                <img 
-                                    src={product.thumbnailUrl || product.imageUrls?.[0] || 'https://placehold.co/600x400?text=No+Image'} 
-                                    alt={product.title} 
-                                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                                />
-                                <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold text-[#6C63FF] shadow-sm uppercase tracking-wide">
-                                    {product.status}
-                                </div>
-                            </div>
-                            <div className="flex-1 flex flex-col">
-                                <h3 className="font-bold text-[#3D4852] truncate mb-1 text-lg">{product.title}</h3>
-                                <p className="text-xs text-gray-500 mb-4 truncate">Posted on {new Date(product.createdAt || Date.now()).toLocaleDateString()}</p>
-                                
-                                <div className="mt-auto flex items-end justify-between bg-gray-50 rounded-xl p-3">
-                                    <div>
-                                        <p className="text-[10px] uppercase font-bold text-gray-400">Current Price</p>
-                                        <p className="text-lg font-black text-[#6C63FF] leading-none mt-1">
-                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.currentPrice || product.startPrice)}
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Link to={`/products/${product.id}`} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-[#6C63FF] hover:shadow-md transition-all">
-                                            <Eye className="w-5 h-5" />
-                                        </Link>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {products.map((product) => (
+                            <div key={product.id} className="neu-extruded rounded-2xl p-4 transition-all hover:scale-[1.02] duration-300 flex flex-col h-full">
+                                <div className="h-48 rounded-xl neu-inset overflow-hidden relative mb-4">
+                                    <img 
+                                        src={product.thumbnailUrl || product.imageUrls?.[0] || 'https://placehold.co/600x400?text=No+Image'} 
+                                        alt={product.title} 
+                                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                                    />
+                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold text-[#6C63FF] shadow-sm uppercase tracking-wide">
+                                        {product.status}
                                     </div>
                                 </div>
+                                <div className="flex-1 flex flex-col">
+                                    <h3 className="font-bold text-[#3D4852] truncate mb-1 text-lg">{product.title}</h3>
+                                    <p className="text-xs text-gray-500 mb-4 truncate">Posted on {new Date(product.createdAt || Date.now()).toLocaleDateString()}</p>
+                                    
+                                    <div className="mt-auto flex items-end justify-between bg-gray-50 rounded-xl p-3">
+                                        <div>
+                                            <p className="text-[10px] uppercase font-bold text-gray-400">Current Price</p>
+                                            <p className="text-lg font-black text-[#6C63FF] leading-none mt-1">
+                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.currentPrice || product.startPrice)}
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Link to={`/products/${product.id}`} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-[#6C63FF] hover:shadow-md transition-all">
+                                                <Eye className="w-5 h-5" />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="mt-12 flex justify-center items-center space-x-6">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                                disabled={currentPage === 0}
+                                className="neu-btn px-6 py-2 rounded-xl text-sm font-bold text-[#3D4852] disabled:opacity-50 disabled:shadow-none transition-all"
+                            >
+                                Previous
+                            </button>
+                            <span className="neu-inset px-4 py-2 rounded-lg text-sm font-bold text-[#6C63FF]">
+                                Page {currentPage + 1} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                disabled={currentPage >= totalPages - 1}
+                                className="neu-btn px-6 py-2 rounded-xl text-sm font-bold text-[#3D4852] disabled:opacity-50 disabled:shadow-none transition-all"
+                            >
+                                Next
+                            </button>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
         </div>
     );

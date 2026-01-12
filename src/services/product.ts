@@ -116,8 +116,8 @@ export const productService = {
     },
 
     // New Profile Features
-    getMyProducts: async () => {
-        const response = await api.get('/products/seller/me');
+    getMyProducts: async (params?: any) => {
+        const response = await api.get('/products/seller/me', { params });
         return response.data && response.data.data ? response.data.data : response.data;
     },
 
